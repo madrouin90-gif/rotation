@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Avatar } from "@/components/ui/Avatar";
 import { ReactionBar } from "@/components/share/ReactionBar";
+import { RatingWidget } from "@/components/share/RatingWidget";
 import { SpotifyEmbedPlayer } from "@/components/share/SpotifyEmbedPlayer";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { formatDateFr } from "@/lib/dates";
@@ -16,11 +17,12 @@ interface ShareDetailModalProps {
   member: Pick<MemberWithShares, "id" | "pseudo" | "avatar_emoji" | "avatar_color">;
   settings: GroupSettings;
   token: string;
+  isMe: boolean;
   onClose: () => void;
   onChanged: () => void;
 }
 
-export function ShareDetailModal({ share, member, settings, token, onClose, onChanged }: ShareDetailModalProps) {
+export function ShareDetailModal({ share, member, settings, token, isMe, onClose, onChanged }: ShareDetailModalProps) {
   const { showError } = useToast();
   const [pending, setPending] = useState(false);
 
@@ -112,6 +114,22 @@ export function ShareDetailModal({ share, member, settings, token, onClose, onCh
             onToggle={handleToggleReaction}
             disabled={pending}
           />
+
+          {((item.rating?.votesCount ?? 0) > 0 || !isMe) && (
+            <div className="flex items-center justify-between gap-3 bg-surface-2 rounded-2xl p-4">
+              {(item.rating?.votesCount ?? 0) > 0 ? (
+                <p className="text-sm text-accent">
+                  🏆 {item.rating!.scoreOn100}/100 · {item.rating!.votesCount} vote
+                  {item.rating!.votesCount > 1 ? "s" : ""}
+                </p>
+              ) : (
+                <p className="text-sm text-muted">Pas encore noté</p>
+              )}
+              {!isMe && (
+                <RatingWidget itemId={item.id} token={token} myScore={item.rating?.myScore ?? null} onRated={onChanged} />
+              )}
+            </div>
+          )}
         </div>
       </div>
     </Modal>

@@ -81,6 +81,41 @@ create table if not exists reactions (
 create index if not exists idx_reactions_share_id on reactions(share_id);
 
 -- ============================================================
+-- ratings — notes /10 entre membres, portent sur l'item permanent
+-- (pas sur le share/slot) pour survivre à un remplacement et
+-- alimenter un palmarès historisé.
+-- ============================================================
+create table if not exists ratings (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid not null references items(id) on delete cascade,
+  rater_member_id uuid not null references members(id) on delete cascade,
+  score int not null check (score >= 0 and score <= 10),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (item_id, rater_member_id)
+);
+
+create index if not exists idx_ratings_item_id on ratings(item_id);
+
+-- ============================================================
+-- share_events — journal append-only de chaque placement d'un
+-- item dans un slot (ajout ou remplacement). Contrairement à
+-- `shares` (mutable, un remplacement écrase la ligne), cette
+-- table n'est jamais mise à jour ni vidée : c'est la source de
+-- vérité pour l'historique "qui a partagé quoi, quand".
+-- ============================================================
+create table if not exists share_events (
+  id uuid primary key default gen_random_uuid(),
+  member_id uuid not null references members(id) on delete cascade,
+  item_id uuid not null references items(id) on delete cascade,
+  occurred_at timestamptz not null default now()
+);
+
+create index if not exists idx_share_events_member_id on share_events(member_id);
+create index if not exists idx_share_events_item_id on share_events(item_id);
+create index if not exists idx_share_events_occurred_at on share_events(occurred_at desc);
+
+-- ============================================================
 -- Row Level Security
 -- Toutes les écritures et lectures passent par les routes API
 -- Next.js côté serveur (client Supabase avec la clé service_role,
@@ -92,3 +127,5 @@ alter table members enable row level security;
 alter table items enable row level security;
 alter table shares enable row level security;
 alter table reactions enable row level security;
+alter table ratings enable row level security;
+alter table share_events enable row level security;

@@ -41,6 +41,22 @@ export function GroupTopBar({ groupName, groupCode, members, meMemberId, isAdmin
             + Partager
           </Button>
 
+          <Link
+            href={`/g/${groupCode}/historique`}
+            className="w-9 h-9 rounded-full bg-surface-2 hover:bg-surface-2/70 flex items-center justify-center transition cursor-pointer"
+            title="Historique"
+          >
+            🕒
+          </Link>
+
+          <Link
+            href={`/g/${groupCode}/palmares`}
+            className="w-9 h-9 rounded-full bg-surface-2 hover:bg-surface-2/70 flex items-center justify-center transition cursor-pointer"
+            title="Palmarès"
+          >
+            🏆
+          </Link>
+
           {isAdmin && (
             <Link
               href={`/g/${groupCode}/reglages`}

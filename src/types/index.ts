@@ -32,6 +32,13 @@ export interface Member {
   created_at: string;
 }
 
+export interface RatingInfo {
+  average: number;
+  scoreOn100: number;
+  votesCount: number;
+  myScore: number | null;
+}
+
 export interface Item {
   id: string;
   member_id: string;
@@ -42,6 +49,7 @@ export interface Item {
   artist_name: string | null;
   artwork_url: string | null;
   first_added_at: string;
+  rating?: RatingInfo;
 }
 
 export interface Share {
@@ -102,4 +110,38 @@ export interface SpotifyPreview {
   title: string;
   artistName: string | null;
   artworkUrl: string | null;
+}
+
+export interface PalmaresVote {
+  memberId: string;
+  pseudo: string;
+  avatarEmoji: string;
+  avatarColor: string;
+  score: number;
+}
+
+export interface HistoryEvent {
+  id: string;
+  occurredAt: string;
+  item: Item;
+  member: {
+    id: string;
+    pseudo: string;
+    avatarEmoji: string;
+    avatarColor: string;
+  };
+}
+
+export interface PalmaresEntry {
+  item: Item;
+  owner: {
+    memberId: string;
+    pseudo: string;
+    avatarEmoji: string;
+    avatarColor: string;
+  };
+  average: number;
+  scoreOn100: number;
+  votesCount: number;
+  votes: PalmaresVote[];
 }

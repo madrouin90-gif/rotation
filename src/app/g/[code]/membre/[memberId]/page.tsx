@@ -156,6 +156,7 @@ export default function MemberPage() {
           member={member}
           settings={data.group.settings}
           token={session.token}
+          isMe={Boolean(isMe)}
           onClose={() => setSelectedShareId(null)}
           onChanged={refresh}
         />

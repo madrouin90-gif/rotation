@@ -109,6 +109,8 @@ export async function POST(request: Request) {
         .eq("id", target.id);
       if (error) throw new AppError("Impossible de remplacer ce partage.", 500);
 
+      await supabaseAdmin.from("share_events").insert({ member_id: member.id, item_id: itemId });
+
       return NextResponse.json({ ok: true, rank: replaceRank });
     }
 
@@ -138,6 +140,8 @@ export async function POST(request: Request) {
     });
 
     if (insertError) throw new AppError("Impossible d'ajouter ce partage.", 500);
+
+    await supabaseAdmin.from("share_events").insert({ member_id: member.id, item_id: itemId });
 
     return NextResponse.json({ ok: true, rank: freeRank });
   } catch (error) {

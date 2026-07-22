@@ -2,6 +2,7 @@ import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { AppError } from "@/lib/errors";
 import { mergeSettings } from "@/lib/settings";
+import { computeRatingAggregate } from "@/lib/ratings";
 import type { Group, GroupState, Item, MemberWithShares, ReactionSummary } from "@/types";
 
 export async function getGroupById(groupId: string): Promise<Group> {
@@ -82,21 +83,74 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
     );
   }
 
-  const members: MemberWithShares[] = memberRows.map((m) => ({
+  const itemIds = Array.from(new Set(shares.map((s) => s.item_id)));
+  const { data: ratingRows, error: ratingsError } = await supabaseAdmin
+    .from("ratings")
+    .select("item_id, rater_member_id, score")
+    .in("item_id", itemIds.length > 0 ? itemIds : ["00000000-0000-0000-0000-000000000000"]);
+
+  if (ratingsError) {
+    throw new AppError("Impossible de charger les notes.", 500);
+  }
+
+  const ratingsByItem = new Map<string, { rater_member_id: string; score: number }[]>();
+  for (const r of ratingRows ?? []) {
+    const list = ratingsByItem.get(r.item_id) ?? [];
+    list.push(r);
+    ratingsByItem.set(r.item_id, list);
+  }
+
+  // Rang d'apparition des membres basé sur la dernière mise à jour de leur liste
+  // (dernier `added_at` parmi leurs partages actifs), le plus récent en premier.
+  // Les membres sans partage actif restent en fin de liste, dans l'ordre d'arrivée.
+  const lastUpdateByMember = new Map<string, string | null>();
+  for (const m of memberRows) {
+    const memberShares = shares.filter((s) => s.member_id === m.id);
+    const last = memberShares.reduce<string | null>(
+      (max, s) => (!max || s.added_at > max ? s.added_at : max),
+      null
+    );
+    lastUpdateByMember.set(m.id, last);
+  }
+
+  const sortedMemberRows = [...memberRows].sort((a, b) => {
+    const la = lastUpdateByMember.get(a.id);
+    const lb = lastUpdateByMember.get(b.id);
+    if (la && lb) return lb.localeCompare(la);
+    if (la && !lb) return -1;
+    if (!la && lb) return 1;
+    return a.created_at.localeCompare(b.created_at);
+  });
+
+  const members: MemberWithShares[] = sortedMemberRows.map((m) => ({
     ...m,
     shares: shares
       .filter((s) => s.member_id === m.id)
       .sort((a, b) => a.rank - b.rank)
-      .map((s) => ({
-        id: s.id,
-        member_id: s.member_id,
-        item_id: s.item_id,
-        rank: s.rank,
-        note: s.note,
-        added_at: s.added_at,
-        item: s.items,
-        reactions: reactionsByShare.get(s.id) ?? [],
-      })),
+      .map((s) => {
+        const itemRatings = ratingsByItem.get(s.item_id) ?? [];
+        const aggregate = computeRatingAggregate(itemRatings.map((r) => r.score));
+        const myRating = itemRatings.find((r) => r.rater_member_id === viewerMemberId);
+
+        return {
+          id: s.id,
+          member_id: s.member_id,
+          item_id: s.item_id,
+          rank: s.rank,
+          note: s.note,
+          added_at: s.added_at,
+          item: {
+            ...s.items,
+            rating: {
+              average: aggregate?.average ?? 0,
+              scoreOn100: aggregate?.scoreOn100 ?? 0,
+              votesCount: aggregate?.votesCount ?? 0,
+              myScore: myRating ? myRating.score : null,
+            },
+          },
+          reactions: reactionsByShare.get(s.id) ?? [],
+        };
+      }),
   }));
 
   const me = memberRows.find((m) => m.id === viewerMemberId);
