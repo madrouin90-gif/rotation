@@ -36,6 +36,7 @@ export function RatingWidget({ itemId, token, myScore, onRated }: RatingWidgetPr
     return (
       <button
         type="button"
+        data-no-pan="true"
         onClick={(e) => {
           e.stopPropagation();
           setValue(myScore ?? 5);
@@ -49,7 +50,7 @@ export function RatingWidget({ itemId, token, myScore, onRated }: RatingWidgetPr
   }
 
   return (
-    <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+    <div className="flex items-center gap-2" data-no-pan="true" onClick={(e) => e.stopPropagation()}>
       <Stepper value={value} min={0} max={10} onChange={setValue} disabled={saving} />
       <Button size="sm" onClick={handleSave} disabled={saving}>
         {saving ? "..." : "Valider"}

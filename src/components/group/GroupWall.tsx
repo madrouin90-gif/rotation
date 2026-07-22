@@ -1,9 +1,11 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { MemberColumn } from "@/components/group/MemberColumn";
 import { ShareCard } from "@/components/group/ShareCard";
 import type { GroupSettings, MemberWithShares, SortMode } from "@/types";
+
+const PAN_CLICK_THRESHOLD_PX = 5;
 
 interface GroupWallProps {
   members: MemberWithShares[];
@@ -31,10 +33,51 @@ export function GroupWall({
   const activeMembers = members.filter((m) => m.is_active);
   const totalShares = activeMembers.reduce((sum, m) => sum + m.shares.length, 0);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const panState = useRef({ down: false, moved: false, startX: 0, startScrollLeft: 0 });
 
   function scrollByColumn(direction: 1 | -1) {
     scrollRef.current?.scrollBy({ left: direction * 260, behavior: "smooth" });
   }
+
+  // Glisser-déposer à la souris pour défiler horizontalement entre les colonnes de membres.
+  // Ignore les zones marquées data-drag-handle (cartes triables de dnd-kit sur sa propre
+  // colonne) et data-no-pan (contrôles qui doivent toujours réagir au clic sans interférence,
+  // ex. bouton d'écoute, widget de note). Distingue clic vs glissement via un seuil de
+  // mouvement, en supprimant le clic qui suivrait un vrai glissement.
+  function handlePanMouseDownCapture(e: React.MouseEvent<HTMLDivElement>) {
+    if (e.button !== 0) return;
+    const target = e.target as HTMLElement;
+    if (target.closest("[data-drag-handle], [data-no-pan]")) return;
+    const container = scrollRef.current;
+    if (!container) return;
+    panState.current = { down: true, moved: false, startX: e.clientX, startScrollLeft: container.scrollLeft };
+  }
+
+  function handlePanClickCapture(e: React.MouseEvent<HTMLDivElement>) {
+    if (panState.current.moved) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+
+  useEffect(() => {
+    function onMouseMove(e: MouseEvent) {
+      const state = panState.current;
+      if (!state.down || !scrollRef.current) return;
+      const dx = e.clientX - state.startX;
+      if (Math.abs(dx) > PAN_CLICK_THRESHOLD_PX) state.moved = true;
+      if (state.moved) scrollRef.current.scrollLeft = state.startScrollLeft - dx;
+    }
+    function onMouseUp() {
+      panState.current.down = false;
+    }
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, []);
 
   if (totalShares === 0) {
     return (
@@ -91,7 +134,12 @@ export function GroupWall({
         ›
       </button>
 
-      <div ref={scrollRef} className="wall-scroll flex gap-4 overflow-x-auto p-4 sm:p-6 scroll-smooth">
+      <div
+        ref={scrollRef}
+        onMouseDownCapture={handlePanMouseDownCapture}
+        onClickCapture={handlePanClickCapture}
+        className="wall-scroll flex gap-4 overflow-x-auto p-4 sm:p-6 scroll-smooth cursor-grab active:cursor-grabbing"
+      >
         {activeMembers.map((member) => (
           <MemberColumn
             key={member.id}

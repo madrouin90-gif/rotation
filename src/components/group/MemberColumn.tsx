@@ -46,6 +46,7 @@ function EmptySlot({ isMe, onAddEmpty }: { isMe: boolean; onAddEmpty: () => void
     <button
       type="button"
       onClick={onAddEmpty}
+      data-no-pan="true"
       className="aspect-square rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted hover:border-accent hover:text-accent transition cursor-pointer"
     >
       <span className="text-2xl">+</span>

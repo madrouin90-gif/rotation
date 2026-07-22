@@ -6,6 +6,7 @@ import { useMemberSession } from "@/hooks/useMemberSession";
 import { useGroupData } from "@/hooks/useGroupData";
 import { GroupTopBar } from "@/components/group/GroupTopBar";
 import { GroupWall } from "@/components/group/GroupWall";
+import { MemberFilterBar } from "@/components/group/MemberFilterBar";
 import { RecentActivitySidebar } from "@/components/group/RecentActivitySidebar";
 import { SortToggle } from "@/components/group/SortToggle";
 import { AddShareFlow } from "@/components/add-share/AddShareFlow";
@@ -32,6 +33,7 @@ export default function GroupPage() {
   const [sortModeOverride, setSortModeOverride] = useState<SortMode | null>(null);
   const [showAddShare, setShowAddShare] = useState(false);
   const [selectedShareId, setSelectedShareId] = useState<string | null>(null);
+  const [filterMemberIds, setFilterMemberIds] = useState<string[]>([]);
 
   useEffect(() => {
     if (!sessionLoading && !session) {
@@ -65,6 +67,13 @@ export default function GroupPage() {
   }
 
   if (!data) return null;
+
+  function toggleMemberFilter(memberId: string) {
+    setFilterMemberIds((prev) => (prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId]));
+  }
+
+  const visibleMembers =
+    filterMemberIds.length > 0 ? data.members.filter((m) => filterMemberIds.includes(m.id)) : data.members;
 
   async function handleReorder(orderedShareIds: string[]) {
     try {
@@ -105,9 +114,18 @@ export default function GroupPage() {
             {sortMode && <SortToggle value={sortMode} onChange={setSortModeOverride} />}
           </div>
 
+          <div className="pt-3">
+            <MemberFilterBar
+              members={data.members.filter((m) => m.is_active)}
+              selectedIds={filterMemberIds}
+              onToggle={toggleMemberFilter}
+              onReset={() => setFilterMemberIds([])}
+            />
+          </div>
+
           {sortMode && (
             <GroupWall
-              members={data.members}
+              members={visibleMembers}
               settings={data.group.settings}
               sortMode={sortMode}
               viewerMemberId={data.me.memberId}

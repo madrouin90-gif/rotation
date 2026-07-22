@@ -12,6 +12,7 @@ export function ListenButton({ type, spotifyId, className = "" }: ListenButtonPr
     <a
       href={spotifyAppUri(type, spotifyId)}
       onClick={(e) => e.stopPropagation()}
+      data-no-pan="true"
       title="Écouter sur Spotify"
       aria-label="Écouter sur Spotify"
       className={`w-9 h-9 rounded-full bg-black/50 hover:bg-accent flex items-center justify-center text-white transition cursor-pointer backdrop-blur-sm ${className}`}

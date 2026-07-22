@@ -52,14 +52,21 @@ export function ShareCard({
           className={`w-full h-full block ${
             dragHandleAttributes ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
           }`}
+          data-drag-handle={dragHandleAttributes ? "true" : undefined}
           {...dragHandleAttributes}
           {...dragHandleListeners}
         >
           {item.artwork_url ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={item.artwork_url} alt={item.title} className="w-full h-full object-cover" />
+            <img
+              src={item.artwork_url}
+              alt={item.title}
+              draggable={false}
+              onDragStart={(e) => e.preventDefault()}
+              className="w-full h-full object-cover pointer-events-none"
+            />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-4xl">🎵</div>
+            <div className="w-full h-full flex items-center justify-center text-4xl pointer-events-none">🎵</div>
           )}
         </button>
 
