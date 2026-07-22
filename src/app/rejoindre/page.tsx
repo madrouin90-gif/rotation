@@ -6,11 +6,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { AvatarPicker } from "@/components/onboarding/AvatarPicker";
+import { PublicGroupsList } from "@/components/onboarding/PublicGroupsList";
 import { AVATAR_COLORS, AVATAR_EMOJIS } from "@/lib/avatars";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { saveSession } from "@/lib/session";
 
-type Step = "code" | "profile";
+type Step = "code" | "profile" | "pending";
 
 export default function RejoindreGroupePage() {
   return (
@@ -44,17 +45,27 @@ function RejoindreForm() {
     setLoading(true);
     try {
       const normalizedCode = code.trim().toUpperCase();
-      const result = await apiFetch<{ token: string; memberId: string; groupCode: string; groupName: string }>(
-        `/api/groups/${normalizedCode}/join`,
-        { method: "POST", body: { pseudo, avatarEmoji: emoji, avatarColor: color, password } }
-      );
+      const result = await apiFetch<{
+        token: string;
+        memberId: string;
+        groupCode: string;
+        groupName: string;
+        approvalStatus: "pending" | "approved";
+      }>(`/api/groups/${normalizedCode}/join`, {
+        method: "POST",
+        body: { pseudo, avatarEmoji: emoji, avatarColor: color, password },
+      });
       saveSession({
         token: result.token,
         memberId: result.memberId,
         groupCode: result.groupCode,
         groupName: result.groupName,
       });
-      router.push(`/g/${result.groupCode}`);
+      if (result.approvalStatus === "pending") {
+        setStep("pending");
+      } else {
+        router.push(`/g/${result.groupCode}`);
+      }
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Impossible de rejoindre ce groupe. Réessaie.");
     } finally {
@@ -72,6 +83,14 @@ function RejoindreForm() {
         {step === "code" && (
           <div className="mt-6 flex flex-col gap-4">
             <h1 className="font-display text-3xl">Rejoindre un groupe</h1>
+
+            <PublicGroupsList
+              onSelect={(selectedCode) => {
+                setCode(selectedCode);
+                setStep("profile");
+              }}
+            />
+
             <p className="text-muted text-sm">Entre le code à 6 caractères partagé par un membre du groupe.</p>
             <Input
               autoFocus
@@ -137,6 +156,20 @@ function RejoindreForm() {
                 {loading ? "Connexion..." : "Rejoindre"}
               </Button>
             </div>
+          </div>
+        )}
+
+        {step === "pending" && (
+          <div className="mt-6 flex flex-col items-center gap-3 text-center">
+            <p className="text-4xl">⏳</p>
+            <h1 className="font-display text-2xl">Demande envoyée</h1>
+            <p className="text-muted text-sm">
+              Ce groupe demande l&apos;approbation de l&apos;admin avant de rejoindre. Tu seras en mesure d&apos;accéder
+              au groupe dès que ta demande sera acceptée.
+            </p>
+            <Link href="/" className="text-accent hover:underline text-sm mt-2">
+              Retour à l&apos;accueil
+            </Link>
           </div>
         )}
       </div>

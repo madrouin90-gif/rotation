@@ -13,6 +13,8 @@ export interface GroupSettings {
   highlight_top_pick: boolean;
   allowed_types: SpotifyItemType[];
   genre_tags: string[];
+  is_public: boolean;
+  require_approval: boolean;
 }
 
 export interface Group {
@@ -31,6 +33,7 @@ export interface Member {
   avatar_color: string;
   is_admin: boolean;
   is_active: boolean;
+  is_owner: boolean;
   created_at: string;
 }
 
@@ -92,8 +95,26 @@ export interface GroupState {
   me: {
     memberId: string;
     isAdmin: boolean;
+    isOwner: boolean;
     hasPassword: boolean;
+    pendingRequestsCount: number;
   };
+}
+
+export interface PendingRequest {
+  id: string;
+  pseudo: string;
+  avatarEmoji: string;
+  avatarColor: string;
+  createdAt: string;
+}
+
+export interface PublicGroupSummary {
+  code: string;
+  name: string;
+  memberCount: number;
+  maxMembers: number;
+  requireApproval: boolean;
 }
 
 export interface ArchiveEntry {

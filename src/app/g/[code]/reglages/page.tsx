@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useMemberSession } from "@/hooks/useMemberSession";
 import { useGroupData } from "@/hooks/useGroupData";
 import { IdentitySection } from "@/components/settings/IdentitySection";
+import { JoinRequestsSection } from "@/components/settings/JoinRequestsSection";
 import { MembersSection } from "@/components/settings/MembersSection";
 import { ParamsSection } from "@/components/settings/ParamsSection";
 
@@ -55,11 +56,13 @@ export default function ReglagesPage() {
       <div className="max-w-3xl w-full mx-auto flex-1 flex flex-col gap-10 p-4 sm:p-6 pb-24">
         <IdentitySection token={session.token} groupCode={code} groupName={data.group.name} onRefresh={refresh} />
         <hr className="border-border" />
+        <JoinRequestsSection token={session.token} groupCode={code} onRefresh={refresh} />
         <MembersSection
           token={session.token}
           groupCode={code}
           members={data.members}
           meMemberId={data.me.memberId}
+          isOwner={data.me.isOwner}
           onRefresh={refresh}
         />
         <hr className="border-border" />

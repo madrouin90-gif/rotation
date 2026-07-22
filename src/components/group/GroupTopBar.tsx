@@ -13,6 +13,7 @@ interface GroupTopBarProps {
   meMemberId: string;
   isAdmin: boolean;
   hasPassword: boolean;
+  pendingRequestsCount: number;
   onAddShare: () => void;
   onLogout: () => void;
 }
@@ -24,6 +25,7 @@ export function GroupTopBar({
   meMemberId,
   isAdmin,
   hasPassword,
+  pendingRequestsCount,
   onAddShare,
   onLogout,
 }: GroupTopBarProps) {
@@ -75,10 +77,15 @@ export function GroupTopBar({
           {isAdmin && (
             <Link
               href={`/g/${groupCode}/reglages`}
-              className="w-9 h-9 rounded-full bg-surface-2 hover:bg-surface-2/70 flex items-center justify-center transition cursor-pointer"
+              className="relative w-9 h-9 rounded-full bg-surface-2 hover:bg-surface-2/70 flex items-center justify-center transition cursor-pointer"
               title="Réglages du groupe"
             >
               ⚙️
+              {pendingRequestsCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-accent-2 text-white text-[10px] font-semibold flex items-center justify-center">
+                  {pendingRequestsCount}
+                </span>
+              )}
             </Link>
           )}
 

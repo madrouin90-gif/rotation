@@ -13,14 +13,16 @@ interface MembersSectionProps {
   groupCode: string;
   members: MemberWithShares[];
   meMemberId: string;
+  isOwner: boolean;
   onRefresh: () => void;
 }
 
-export function MembersSection({ token, groupCode, members, meMemberId, onRefresh }: MembersSectionProps) {
+export function MembersSection({ token, groupCode, members, meMemberId, isOwner, onRefresh }: MembersSectionProps) {
   const { showError, showSuccess } = useToast();
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [promotingId, setPromotingId] = useState<string | null>(null);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [renamingBusy, setRenamingBusy] = useState(false);
@@ -53,6 +55,23 @@ export function MembersSection({ token, groupCode, members, meMemberId, onRefres
       showError(e instanceof ApiError ? e.message : "Impossible de mettre à jour ce membre.");
     } finally {
       setTogglingId(null);
+    }
+  }
+
+  async function handleTogglePromote(memberId: string, nextIsAdmin: boolean) {
+    setPromotingId(memberId);
+    try {
+      await apiFetch(`/api/groups/${groupCode}/members/${memberId}`, {
+        method: "PATCH",
+        token,
+        body: { action: "promote_admin", isAdmin: nextIsAdmin },
+      });
+      showSuccess(nextIsAdmin ? "Membre promu admin." : "Statut admin retiré.");
+      onRefresh();
+    } catch (e) {
+      showError(e instanceof ApiError ? e.message : "Impossible de mettre à jour ce membre.");
+    } finally {
+      setPromotingId(null);
     }
   }
 
@@ -116,13 +135,25 @@ export function MembersSection({ token, groupCode, members, meMemberId, onRefres
                 </button>
               )}
               <div className="flex items-center gap-2 mt-0.5">
-                {m.is_admin && <span className="text-xs text-accent">Admin</span>}
+                {m.is_owner && <span className="text-xs text-accent">Créateur</span>}
+                {m.is_admin && !m.is_owner && <span className="text-xs text-accent">Admin</span>}
                 {!m.is_active && <span className="text-xs bg-surface px-1.5 py-0.5 rounded-full text-muted">Désactivé</span>}
               </div>
             </div>
 
             {m.id !== meMemberId && renamingId !== m.id && (
               <div className="flex items-center gap-2 shrink-0">
+                {isOwner && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleTogglePromote(m.id, !m.is_admin)}
+                    disabled={promotingId === m.id}
+                  >
+                    {promotingId === m.id ? "..." : m.is_admin ? "Retirer admin" : "Promouvoir admin"}
+                  </Button>
+                )}
+
                 <Button
                   variant="ghost"
                   size="sm"

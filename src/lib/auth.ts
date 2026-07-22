@@ -13,6 +13,7 @@ export interface AuthedMember {
   avatar_emoji: string;
   avatar_color: string;
   is_admin: boolean;
+  is_owner: boolean;
 }
 
 /** Récupère le membre authentifié via le header x-member-token. Ne vérifie pas encore l'appartenance à un groupe précis. */
@@ -24,7 +25,7 @@ export async function requireMember(request: Request): Promise<AuthedMember> {
 
   const { data, error } = await supabaseAdmin
     .from("members")
-    .select("id, group_id, pseudo, avatar_emoji, avatar_color, is_admin, is_active")
+    .select("id, group_id, pseudo, avatar_emoji, avatar_color, is_admin, is_owner, is_active, approval_status")
     .eq("token", token)
     .maybeSingle();
 
@@ -34,6 +35,10 @@ export async function requireMember(request: Request): Promise<AuthedMember> {
 
   if (!data.is_active) {
     throw new AppError("Ce profil a été désactivé par l'admin du groupe.", 401);
+  }
+
+  if (data.approval_status !== "approved") {
+    throw new AppError("Ta demande d'adhésion est en attente d'approbation par l'admin.", 401);
   }
 
   return data;
@@ -71,6 +76,17 @@ export async function requireAdminInGroup(
   const result = await requireMemberInGroup(request, groupCode);
   if (!result.member.is_admin) {
     throw new AppError("Seul l'admin du groupe peut effectuer cette action.", 403);
+  }
+  return result;
+}
+
+export async function requireOwnerInGroup(
+  request: Request,
+  groupCode: string
+): Promise<{ member: AuthedMember; group: Group }> {
+  const result = await requireMemberInGroup(request, groupCode);
+  if (!result.member.is_owner) {
+    throw new AppError("Seul le créateur du groupe peut effectuer cette action.", 403);
   }
   return result;
 }

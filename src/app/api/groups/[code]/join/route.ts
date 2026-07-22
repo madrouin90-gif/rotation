@@ -47,14 +47,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
 
     const { data: existingMembers, error: countError } = await supabaseAdmin
       .from("members")
-      .select("id, pseudo")
+      .select("id, pseudo, approval_status")
       .eq("group_id", group.id);
 
     if (countError || !existingMembers) {
       throw new AppError("Impossible de vérifier les membres du groupe.", 500);
     }
 
-    if (existingMembers.length >= settings.max_members) {
+    const approvedCount = existingMembers.filter((m) => m.approval_status === "approved").length;
+    if (approvedCount >= settings.max_members) {
       throw new AppError(
         `Ce groupe est déjà complet (maximum ${settings.max_members} membres).`
       );
@@ -66,6 +67,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
     }
 
     const passwordHash = await hashPassword(password);
+    const approvalStatus = settings.require_approval ? "pending" : "approved";
 
     const { data: member, error: memberError } = await supabaseAdmin
       .from("members")
@@ -76,6 +78,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
         avatar_color: avatarColor,
         is_admin: false,
         password_hash: passwordHash,
+        approval_status: approvalStatus,
       })
       .select("id, token")
       .single();
@@ -89,6 +92,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
       memberId: member.id,
       groupCode: group.code,
       groupName: group.name,
+      approvalStatus,
     });
   } catch (error) {
     return errorResponse(error);

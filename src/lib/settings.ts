@@ -17,6 +17,8 @@ export const DEFAULT_SETTINGS: GroupSettings = {
   highlight_top_pick: true,
   allowed_types: ["track", "album", "artist"],
   genre_tags: DEFAULT_GENRE_TAGS,
+  is_public: false,
+  require_approval: false,
 };
 
 export const SETTINGS_BOUNDS = {
@@ -152,6 +154,14 @@ export function validateSettingsPatch(
 
   if (patch.highlight_top_pick !== undefined && typeof patch.highlight_top_pick !== "boolean") {
     errors.push({ field: "highlight_top_pick", message: "Valeur invalide pour la mise en évidence du top pick." });
+  }
+
+  if (patch.is_public !== undefined && typeof patch.is_public !== "boolean") {
+    errors.push({ field: "is_public", message: "Valeur invalide pour la visibilité publique du groupe." });
+  }
+
+  if (patch.require_approval !== undefined && typeof patch.require_approval !== "boolean") {
+    errors.push({ field: "require_approval", message: "Valeur invalide pour l'approbation requise." });
   }
 
   if (errors.length > 0) {

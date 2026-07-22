@@ -32,8 +32,9 @@ interface ShareRow {
 export async function buildGroupState(group: Group, viewerMemberId: string): Promise<GroupState> {
   const { data: memberRows, error: membersError } = await supabaseAdmin
     .from("members")
-    .select("id, group_id, pseudo, avatar_emoji, avatar_color, is_admin, is_active, created_at")
+    .select("id, group_id, pseudo, avatar_emoji, avatar_color, is_admin, is_owner, is_active, created_at")
     .eq("group_id", group.id)
+    .eq("approval_status", "approved")
     .order("created_at", { ascending: true });
 
   if (membersError || !memberRows) {
@@ -163,10 +164,26 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
     .eq("id", viewerMemberId)
     .maybeSingle();
 
+  let pendingRequestsCount = 0;
+  if (me?.is_admin) {
+    const { count } = await supabaseAdmin
+      .from("members")
+      .select("id", { count: "exact", head: true })
+      .eq("group_id", group.id)
+      .eq("approval_status", "pending");
+    pendingRequestsCount = count ?? 0;
+  }
+
   return {
     group: { id: group.id, name: group.name, code: group.code, settings: group.settings },
     members,
-    me: { memberId: viewerMemberId, isAdmin: me?.is_admin ?? false, hasPassword: Boolean(viewerRow?.password_hash) },
+    me: {
+      memberId: viewerMemberId,
+      isAdmin: me?.is_admin ?? false,
+      isOwner: me?.is_owner ?? false,
+      hasPassword: Boolean(viewerRow?.password_hash),
+      pendingRequestsCount,
+    },
   };
 }
 

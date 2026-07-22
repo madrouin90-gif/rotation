@@ -9,6 +9,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { SlotGrid } from "@/components/member/SlotGrid";
 import { PasswordForm } from "@/components/member/PasswordForm";
+import { PseudoForm } from "@/components/member/PseudoForm";
 import { AddShareFlow } from "@/components/add-share/AddShareFlow";
 import { ShareDetailModal } from "@/components/share/ShareDetailModal";
 import { useToast } from "@/components/ui/Toast";
@@ -124,7 +125,12 @@ export default function MemberPage() {
           </Link>
         </div>
 
-        {isMe && <PasswordForm token={session.token} hasPassword={data.me.hasPassword} onSaved={refresh} />}
+        {isMe && (
+          <div className="flex flex-col gap-2">
+            <PseudoForm token={session.token} currentPseudo={member.pseudo} onSaved={refresh} />
+            <PasswordForm token={session.token} hasPassword={data.me.hasPassword} onSaved={refresh} />
+          </div>
+        )}
 
         <SlotGrid
           shares={member.shares}

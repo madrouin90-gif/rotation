@@ -69,6 +69,7 @@ export async function POST(request: Request) {
         avatar_emoji: avatarEmoji,
         avatar_color: avatarColor,
         is_admin: true,
+        is_owner: true,
         password_hash: passwordHash,
       })
       .select("id, token")

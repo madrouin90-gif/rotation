@@ -26,6 +26,8 @@ create table if not exists members (
   token uuid not null unique default gen_random_uuid(),
   is_admin boolean not null default false,
   is_active boolean not null default true,
+  is_owner boolean not null default false,
+  approval_status text not null default 'approved' check (approval_status in ('pending', 'approved')),
   password_hash text,
   created_at timestamptz not null default now(),
   unique (group_id, pseudo)
@@ -35,6 +37,10 @@ create table if not exists members (
 -- ne modifie pas une table existante, il faut donc les ajouter explicitement.
 alter table members add column if not exists is_active boolean not null default true;
 alter table members add column if not exists password_hash text;
+alter table members add column if not exists is_owner boolean not null default false;
+alter table members add column if not exists approval_status text not null default 'approved' check (approval_status in ('pending', 'approved'));
+
+create index if not exists idx_members_approval_status on members(approval_status);
 
 create index if not exists idx_members_token on members(token);
 create index if not exists idx_members_group_id on members(group_id);

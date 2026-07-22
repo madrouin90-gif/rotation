@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
-import { requireAdminInGroup } from "@/lib/auth";
+import { requireAdminInGroup, requireMemberInGroup } from "@/lib/auth";
+import { getGroupById } from "@/lib/groupState";
 import { AppError, errorResponse } from "@/lib/errors";
 import { normalizeGroupCode } from "@/lib/codes";
 
@@ -44,7 +45,17 @@ interface RenameBody {
   action: "rename";
   pseudo: string;
 }
-type PatchBody = ToggleActiveBody | RenameBody;
+interface ApproveBody {
+  action: "approve";
+}
+interface RejectBody {
+  action: "reject";
+}
+interface PromoteAdminBody {
+  action: "promote_admin";
+  isAdmin: boolean;
+}
+type PatchBody = ToggleActiveBody | RenameBody | ApproveBody | RejectBody | PromoteAdminBody;
 
 export async function PATCH(
   request: Request,
@@ -53,17 +64,41 @@ export async function PATCH(
   try {
     const { code: rawCode, id: memberId } = await params;
     const code = normalizeGroupCode(rawCode);
-    const { member } = await requireAdminInGroup(request, code);
+    const { member } = await requireMemberInGroup(request, code);
     const body = (await request.json()) as PatchBody;
 
     const { data: target, error: fetchError } = await supabaseAdmin
       .from("members")
-      .select("id, group_id, pseudo")
+      .select("id, group_id, pseudo, approval_status")
       .eq("id", memberId)
       .maybeSingle();
 
     if (fetchError || !target || target.group_id !== member.group_id) {
       throw new AppError("Ce membre n'existe pas dans ce groupe.", 404);
+    }
+
+    if (body.action === "promote_admin") {
+      if (!member.is_owner) {
+        throw new AppError("Seul le créateur du groupe peut effectuer cette action.", 403);
+      }
+      if (member.id === memberId) {
+        throw new AppError("Tu ne peux pas modifier ton propre statut d'admin.");
+      }
+      if (typeof body.isAdmin !== "boolean") {
+        throw new AppError("Valeur invalide.");
+      }
+
+      const { error } = await supabaseAdmin
+        .from("members")
+        .update({ is_admin: body.isAdmin })
+        .eq("id", memberId);
+      if (error) throw new AppError("Impossible de mettre à jour ce membre.", 500);
+
+      return NextResponse.json({ ok: true, isAdmin: body.isAdmin });
+    }
+
+    if (!member.is_admin) {
+      throw new AppError("Seul l'admin du groupe peut effectuer cette action.", 403);
     }
 
     if (body.action === "toggle_active") {
@@ -109,6 +144,44 @@ export async function PATCH(
       if (error) throw new AppError("Impossible de renommer ce membre.", 500);
 
       return NextResponse.json({ ok: true, pseudo });
+    }
+
+    if (body.action === "approve") {
+      if (target.approval_status !== "pending") {
+        throw new AppError("Cette demande n'est plus en attente.");
+      }
+
+      const group = await getGroupById(member.group_id);
+      const { count } = await supabaseAdmin
+        .from("members")
+        .select("id", { count: "exact", head: true })
+        .eq("group_id", member.group_id)
+        .eq("approval_status", "approved");
+
+      if ((count ?? 0) >= group.settings.max_members) {
+        throw new AppError(
+          `Le groupe est complet (maximum ${group.settings.max_members} membres) — augmente la limite ou retire un membre avant d'approuver.`
+        );
+      }
+
+      const { error } = await supabaseAdmin
+        .from("members")
+        .update({ approval_status: "approved" })
+        .eq("id", memberId);
+      if (error) throw new AppError("Impossible d'approuver ce membre.", 500);
+
+      return NextResponse.json({ ok: true });
+    }
+
+    if (body.action === "reject") {
+      if (target.approval_status !== "pending") {
+        throw new AppError("Cette demande n'est plus en attente.");
+      }
+
+      const { error } = await supabaseAdmin.from("members").delete().eq("id", memberId);
+      if (error) throw new AppError("Impossible de rejeter cette demande.", 500);
+
+      return NextResponse.json({ ok: true });
     }
 
     throw new AppError("Action inconnue.");

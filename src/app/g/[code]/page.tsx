@@ -98,6 +98,7 @@ export default function GroupPage() {
         meMemberId={data.me.memberId}
         isAdmin={data.me.isAdmin}
         hasPassword={data.me.hasPassword}
+        pendingRequestsCount={data.me.pendingRequestsCount}
         onAddShare={() => setShowAddShare(true)}
         onLogout={() => {
           removeSession();

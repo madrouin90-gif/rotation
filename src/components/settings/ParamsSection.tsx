@@ -328,6 +328,24 @@ export function ParamsSection({ token, groupCode, settings, onRefresh }: ParamsS
         />
       </SettingRow>
 
+      <SettingRow
+        label="Groupe public"
+        description="Listé dans l'annuaire des groupes que les visiteurs peuvent parcourir pour rejoindre."
+      >
+        <Toggle checked={draft.is_public} onChange={(v) => setDraft((d) => ({ ...d, is_public: v }))} disabled={saving} />
+      </SettingRow>
+
+      <SettingRow
+        label="Approbation requise pour rejoindre"
+        description="Les nouvelles demandes restent en attente jusqu'à ce qu'un admin les approuve."
+      >
+        <Toggle
+          checked={draft.require_approval}
+          onChange={(v) => setDraft((d) => ({ ...d, require_approval: v }))}
+          disabled={saving}
+        />
+      </SettingRow>
+
       <div className="sticky bottom-4 flex justify-end">
         <Button size="lg" disabled={!hasChanges || saving} onClick={handleSave}>
           {saving ? "Enregistrement..." : "Enregistrer les modifications"}
