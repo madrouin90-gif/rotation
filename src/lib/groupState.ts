@@ -32,7 +32,7 @@ interface ShareRow {
 export async function buildGroupState(group: Group, viewerMemberId: string): Promise<GroupState> {
   const { data: memberRows, error: membersError } = await supabaseAdmin
     .from("members")
-    .select("id, group_id, pseudo, avatar_emoji, avatar_color, is_admin, created_at")
+    .select("id, group_id, pseudo, avatar_emoji, avatar_color, is_admin, is_active, created_at")
     .eq("group_id", group.id)
     .order("created_at", { ascending: true });
 

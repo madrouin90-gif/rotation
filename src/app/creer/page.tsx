@@ -17,18 +17,26 @@ export default function CreerGroupePage() {
   const [step, setStep] = useState<Step>("name");
   const [groupName, setGroupName] = useState("");
   const [pseudo, setPseudo] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [emoji, setEmoji] = useState<string>(AVATAR_EMOJIS[0]);
   const [color, setColor] = useState<string>(AVATAR_COLORS[0]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const passwordsMatch = password === passwordConfirm;
+
   async function handleCreate() {
+    if (!passwordsMatch) {
+      setError("Les mots de passe ne correspondent pas.");
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
       const result = await apiFetch<{ token: string; memberId: string; groupCode: string; groupName: string }>(
         "/api/groups",
-        { method: "POST", body: { groupName, pseudo, avatarEmoji: emoji, avatarColor: color } }
+        { method: "POST", body: { groupName, pseudo, avatarEmoji: emoji, avatarColor: color, password } }
       );
       saveSession({
         token: result.token,
@@ -92,12 +100,33 @@ export default function CreerGroupePage() {
                 setColor(newColor);
               }}
             />
+            <div className="flex flex-col gap-2">
+              <Input
+                placeholder="Mot de passe"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <Input
+                placeholder="Confirme le mot de passe"
+                type="password"
+                value={passwordConfirm}
+                onChange={(e) => setPasswordConfirm(e.target.value)}
+              />
+              <p className="text-xs text-muted">
+                Te permettra de te reconnecter depuis un autre appareil (4 caractères minimum).
+              </p>
+            </div>
             {error && <p className="text-sm text-red-400">{error}</p>}
             <div className="flex gap-3">
               <Button variant="secondary" onClick={() => setStep("name")} disabled={loading}>
                 Retour
               </Button>
-              <Button className="flex-1" disabled={!pseudo.trim() || loading} onClick={handleCreate}>
+              <Button
+                className="flex-1"
+                disabled={!pseudo.trim() || password.length < 4 || !passwordsMatch || loading}
+                onClick={handleCreate}
+              >
                 {loading ? "Création..." : "Créer le groupe"}
               </Button>
             </div>

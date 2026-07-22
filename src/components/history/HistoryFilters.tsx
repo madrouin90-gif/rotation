@@ -8,6 +8,9 @@ interface HistoryFiltersProps {
   members: Pick<MemberWithShares, "id" | "pseudo" | "avatar_emoji" | "avatar_color">[];
   selectedMemberIds: string[];
   onToggleMember: (memberId: string) => void;
+  genres: string[];
+  selectedGenres: string[];
+  onToggleGenre: (genre: string) => void;
   from: string;
   to: string;
   onChangeFrom: (value: string) => void;
@@ -19,13 +22,16 @@ export function HistoryFilters({
   members,
   selectedMemberIds,
   onToggleMember,
+  genres,
+  selectedGenres,
+  onToggleGenre,
   from,
   to,
   onChangeFrom,
   onChangeTo,
   onReset,
 }: HistoryFiltersProps) {
-  const hasFilters = selectedMemberIds.length > 0 || from !== "" || to !== "";
+  const hasFilters = selectedMemberIds.length > 0 || selectedGenres.length > 0 || from !== "" || to !== "";
 
   return (
     <div className="flex flex-col gap-4 bg-surface rounded-2xl p-4">
@@ -73,6 +79,26 @@ export function HistoryFilters({
           );
         })}
       </div>
+
+      {genres.length > 0 && (
+        <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
+          {genres.map((genre) => {
+            const selected = selectedGenres.includes(genre);
+            return (
+              <button
+                key={genre}
+                type="button"
+                onClick={() => onToggleGenre(genre)}
+                className={`px-2.5 py-1.5 rounded-full text-sm border transition cursor-pointer ${
+                  selected ? "bg-accent/20 border-accent text-foreground" : "bg-surface-2 border-border text-muted"
+                }`}
+              >
+                {genre}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

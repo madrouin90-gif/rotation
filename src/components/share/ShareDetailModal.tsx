@@ -10,6 +10,7 @@ import { apiFetch, ApiError } from "@/lib/apiClient";
 import { formatDateFr } from "@/lib/dates";
 import { useToast } from "@/components/ui/Toast";
 import { spotifyTypeLabelFr } from "@/lib/typeLabels";
+import { spotifyAppUri } from "@/lib/spotifyUri";
 import type { GroupSettings, MemberWithShares, ShareWithReactions } from "@/types";
 
 interface ShareDetailModalProps {
@@ -82,13 +83,12 @@ export function ShareDetailModal({ share, member, settings, token, isMe, onClose
               </span>
               <h2 className="font-display text-2xl sm:text-3xl leading-tight">{item.title}</h2>
               {item.artist_name && <p className="text-muted text-lg">{item.artist_name}</p>}
+              {item.genres.length > 0 && <p className="text-sm text-muted">{item.genres.join(", ")}</p>}
               <p className="text-xs text-muted mt-2">
                 Ajouté pour la 1<sup>re</sup> fois le {formatDateFr(item.first_added_at)}
               </p>
               <a
-                href={item.spotify_url}
-                target="_blank"
-                rel="noopener noreferrer"
+                href={spotifyAppUri(item.type, item.spotify_id)}
                 className="text-sm text-accent hover:underline mt-1 w-fit"
               >
                 Ouvrir dans Spotify ↗

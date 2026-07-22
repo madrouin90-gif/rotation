@@ -76,7 +76,7 @@ export function ShareCard({
             <Avatar emoji={member.avatar_emoji} color={member.avatar_color} size="sm" ring />
           </div>
         )}
-        <ListenButton spotifyUrl={item.spotify_url} className="absolute bottom-2 right-2" />
+        <ListenButton type={item.type} spotifyId={item.spotify_id} className="absolute bottom-2 right-2" />
       </div>
 
       <div className="p-3 flex flex-col gap-1.5">
@@ -85,6 +85,7 @@ export function ShareCard({
           <span className="text-[10px] text-muted shrink-0">#{share.rank}</span>
         </div>
         {item.artist_name && <p className="text-xs text-muted truncate">{item.artist_name}</p>}
+        {item.genres.length > 0 && <p className="text-[11px] text-muted truncate">{item.genres.join(", ")}</p>}
         {showDate && <p className="text-[11px] text-muted">{formatDateFr(share.added_at)}</p>}
         {votesCount > 0 && (
           <p className="text-xs text-accent">

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { Stepper } from "@/components/ui/Stepper";
 import { Toggle } from "@/components/ui/Toggle";
 import { Modal } from "@/components/ui/Modal";
@@ -36,6 +37,7 @@ type PendingAction = { action: "update_settings"; patch: Partial<GroupSettings> 
 export function ParamsSection({ token, groupCode, settings, onRefresh }: ParamsSectionProps) {
   const { showError, showSuccess } = useToast();
   const [saving, setSaving] = useState(false);
+  const [newGenre, setNewGenre] = useState("");
   const [pending, setPending] = useState<{ action: PendingAction; impact: SlotReductionImpact[] } | null>(null);
 
   // Le brouillon suit les settings du serveur tant qu'aucune modification locale n'est en cours ;
@@ -123,6 +125,21 @@ export function ParamsSection({ token, groupCode, settings, onRefresh }: ParamsS
       if (d.reaction_emojis.length >= SETTINGS_BOUNDS.reaction_emojis.max) return d;
       return { ...d, reaction_emojis: [...d.reaction_emojis, emoji] };
     });
+  }
+
+  function removeGenre(genre: string) {
+    setDraft((d) => ({ ...d, genre_tags: d.genre_tags.filter((g) => g !== genre) }));
+  }
+
+  function addGenre() {
+    const genre = newGenre.trim();
+    if (!genre) return;
+    setDraft((d) => {
+      if (d.genre_tags.some((g) => g.toLowerCase() === genre.toLowerCase())) return d;
+      if (d.genre_tags.length >= SETTINGS_BOUNDS.genre_tags.max) return d;
+      return { ...d, genre_tags: [...d.genre_tags, genre] };
+    });
+    setNewGenre("");
   }
 
   return (
@@ -235,6 +252,50 @@ export function ParamsSection({ token, groupCode, settings, onRefresh }: ParamsS
               {spotifyTypeLabelFr(type)}
             </button>
           ))}
+        </div>
+      </SettingRow>
+
+      <SettingRow
+        label="Genres musicaux"
+        description="Tags disponibles en partageant. Vide = désactivés pour ce groupe."
+      >
+        <div className="flex flex-col gap-3 items-end w-full sm:w-auto">
+          <div className="flex flex-wrap gap-2 justify-end">
+            {draft.genre_tags.map((genre) => (
+              <button
+                key={genre}
+                type="button"
+                onClick={() => removeGenre(genre)}
+                disabled={saving}
+                className="flex items-center gap-1 bg-accent/20 border border-accent text-sm px-2.5 py-1 rounded-full cursor-pointer hover:bg-accent/30 transition disabled:opacity-40"
+              >
+                {genre} <span className="text-xs text-muted">✕</span>
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2 w-full sm:w-64">
+            <Input
+              value={newGenre}
+              onChange={(e) => setNewGenre(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addGenre();
+                }
+              }}
+              placeholder="Ajouter un genre"
+              maxLength={30}
+              disabled={saving || draft.genre_tags.length >= SETTINGS_BOUNDS.genre_tags.max}
+              className="py-1.5 text-sm"
+            />
+            <Button
+              size="sm"
+              onClick={addGenre}
+              disabled={saving || !newGenre.trim() || draft.genre_tags.length >= SETTINGS_BOUNDS.genre_tags.max}
+            >
+              Ajouter
+            </Button>
+          </div>
         </div>
       </SettingRow>
 

@@ -21,6 +21,7 @@ export default function HistoriquePage() {
   const { data: groupData } = useGroupData(code, session?.token ?? null);
 
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
+  const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [events, setEvents] = useState<HistoryEvent[] | null>(null);
@@ -34,6 +35,7 @@ export default function HistoriquePage() {
     if (!session) return;
     const query = new URLSearchParams();
     if (selectedMemberIds.length > 0) query.set("memberIds", selectedMemberIds.join(","));
+    if (selectedGenres.length > 0) query.set("genres", selectedGenres.join(","));
     if (from) query.set("from", from);
     if (to) query.set("to", to);
     query.set("limit", "100");
@@ -41,7 +43,7 @@ export default function HistoriquePage() {
     apiFetch<{ events: HistoryEvent[] }>(`/api/groups/${code}/history?${query.toString()}`, { token: session.token })
       .then((res) => setEvents(res.events))
       .catch((e) => setError(e instanceof ApiError ? e.message : "Impossible de charger l'historique."));
-  }, [session, code, selectedMemberIds, from, to]);
+  }, [session, code, selectedMemberIds, selectedGenres, from, to]);
 
   if (sessionLoading || !session) return null;
 
@@ -49,6 +51,10 @@ export default function HistoriquePage() {
     setSelectedMemberIds((prev) =>
       prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId]
     );
+  }
+
+  function toggleGenre(genre: string) {
+    setSelectedGenres((prev) => (prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]));
   }
 
   return (
@@ -68,12 +74,16 @@ export default function HistoriquePage() {
             members={groupData.members}
             selectedMemberIds={selectedMemberIds}
             onToggleMember={toggleMember}
+            genres={groupData.group.settings.genre_tags}
+            selectedGenres={selectedGenres}
+            onToggleGenre={toggleGenre}
             from={from}
             to={to}
             onChangeFrom={setFrom}
             onChangeTo={setTo}
             onReset={() => {
               setSelectedMemberIds([]);
+              setSelectedGenres([]);
               setFrom("");
               setTo("");
             }}
@@ -110,6 +120,7 @@ export default function HistoriquePage() {
                   <p className="text-sm text-muted truncate">
                     {event.item.artist_name ? `${event.item.artist_name} · ` : ""}
                     {spotifyTypeLabelFr(event.item.type)}
+                    {event.item.genres.length > 0 ? ` · ${event.item.genres.join(", ")}` : ""}
                   </p>
                   <div className="flex items-center gap-1.5 mt-1">
                     <Avatar emoji={event.member.avatarEmoji} color={event.member.avatarColor} size="xs" />
@@ -117,7 +128,11 @@ export default function HistoriquePage() {
                     <span className="text-xs text-muted">· {formatDateFr(event.occurredAt)}</span>
                   </div>
                 </div>
-                <ListenButton spotifyUrl={event.item.spotify_url} className="static bg-surface-2 hover:bg-accent" />
+                <ListenButton
+                  type={event.item.type}
+                  spotifyId={event.item.spotify_id}
+                  className="static bg-surface-2 hover:bg-accent"
+                />
               </li>
             ))}
           </ul>

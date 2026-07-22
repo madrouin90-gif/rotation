@@ -24,12 +24,16 @@ export async function requireMember(request: Request): Promise<AuthedMember> {
 
   const { data, error } = await supabaseAdmin
     .from("members")
-    .select("id, group_id, pseudo, avatar_emoji, avatar_color, is_admin")
+    .select("id, group_id, pseudo, avatar_emoji, avatar_color, is_admin, is_active")
     .eq("token", token)
     .maybeSingle();
 
   if (error || !data) {
     throw new AppError("Session invalide ou expirée. Rejoins à nouveau le groupe.", 401);
+  }
+
+  if (!data.is_active) {
+    throw new AppError("Ce profil a été désactivé par l'admin du groupe.", 401);
   }
 
   return data;

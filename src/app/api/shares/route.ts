@@ -9,6 +9,7 @@ interface CreateShareBody {
   spotifyUrl?: string;
   note?: string;
   replaceRank?: number;
+  genres?: string[];
 }
 
 export async function POST(request: Request) {
@@ -21,6 +22,7 @@ export async function POST(request: Request) {
     const spotifyUrl = body.spotifyUrl?.trim() ?? "";
     const note = body.note?.trim() ?? "";
     const replaceRank = body.replaceRank;
+    const genres = Array.isArray(body.genres) ? body.genres.filter((g): g is string => typeof g === "string") : [];
 
     const parsed = parseSpotifyUrl(spotifyUrl);
     if (!parsed) {
@@ -33,6 +35,11 @@ export async function POST(request: Request) {
       throw new AppError(
         `Les partages de type "${spotifyTypeLabelFr(parsed.type)}" ne sont pas autorisés dans ce groupe.`
       );
+    }
+
+    const invalidGenres = genres.filter((g) => !settings.genre_tags.includes(g));
+    if (invalidGenres.length > 0) {
+      throw new AppError(`Genre(s) inconnu(s) dans ce groupe : ${invalidGenres.join(", ")}.`);
     }
 
     if (note.length > 0 && settings.note_max_length === 0) {
@@ -62,6 +69,7 @@ export async function POST(request: Request) {
           artist_name: oembed.artistName,
           artwork_url: oembed.artworkUrl,
           spotify_url: parsed.canonicalUrl,
+          genres,
         })
         .eq("id", itemId);
     } else {
@@ -75,6 +83,7 @@ export async function POST(request: Request) {
           title: oembed.title,
           artist_name: oembed.artistName,
           artwork_url: oembed.artworkUrl,
+          genres,
         })
         .select("id")
         .single();

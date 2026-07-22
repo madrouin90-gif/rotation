@@ -1,5 +1,11 @@
 import type { GroupSettings, SortMode, SpotifyItemType } from "@/types";
 
+export const DEFAULT_GENRE_TAGS = [
+  "Pop", "Rock", "Hip-Hop/Rap", "R&B", "Électro/Dance", "Indie",
+  "Metal", "Jazz", "Classique", "Country", "Folk", "Reggae",
+  "Latino", "K-Pop", "Punk", "Blues", "Soul", "Funk",
+];
+
 export const DEFAULT_SETTINGS: GroupSettings = {
   slots_per_member: 5,
   max_members: 10,
@@ -10,6 +16,7 @@ export const DEFAULT_SETTINGS: GroupSettings = {
   archives_visible: true,
   highlight_top_pick: true,
   allowed_types: ["track", "album", "artist"],
+  genre_tags: DEFAULT_GENRE_TAGS,
 };
 
 export const SETTINGS_BOUNDS = {
@@ -18,6 +25,7 @@ export const SETTINGS_BOUNDS = {
   new_badge_days: { min: 0, max: 90 },
   note_max_length: { min: 0, max: 500 },
   reaction_emojis: { min: 1, max: 8 },
+  genre_tags: { min: 0, max: 40 },
 } as const;
 
 const ALL_SPOTIFY_TYPES: SpotifyItemType[] = ["track", "album", "artist"];
@@ -120,6 +128,21 @@ export function validateSettingsPatch(
         field: "allowed_types",
         message: "Au moins un type de contenu Spotify doit être autorisé (chanson, album ou artiste).",
       });
+    }
+  }
+
+  if (patch.genre_tags !== undefined) {
+    const { min, max } = SETTINGS_BOUNDS.genre_tags;
+    const genres = patch.genre_tags;
+    if (!Array.isArray(genres) || genres.length < min || genres.length > max) {
+      errors.push({
+        field: "genre_tags",
+        message: `Le nombre de genres musicaux doit être entre ${min} et ${max}.`,
+      });
+    } else if (genres.some((g) => typeof g !== "string" || g.trim().length === 0)) {
+      errors.push({ field: "genre_tags", message: "Un genre musical ne peut pas être vide." });
+    } else if (new Set(genres.map((g) => g.toLowerCase())).size !== genres.length) {
+      errors.push({ field: "genre_tags", message: "Chaque genre musical ne peut apparaître qu'une seule fois." });
     }
   }
 

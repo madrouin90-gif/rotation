@@ -4,12 +4,14 @@ import { AppError, errorResponse } from "@/lib/errors";
 import { DEFAULT_SETTINGS } from "@/lib/settings";
 import { generateGroupCode } from "@/lib/codes";
 import { isValidAvatarColor, isValidAvatarEmoji } from "@/lib/avatars";
+import { hashPassword } from "@/lib/password";
 
 interface CreateGroupBody {
   groupName?: string;
   pseudo?: string;
   avatarEmoji?: string;
   avatarColor?: string;
+  password?: string;
 }
 
 export async function POST(request: Request) {
@@ -19,6 +21,7 @@ export async function POST(request: Request) {
     const pseudo = body.pseudo?.trim() ?? "";
     const avatarEmoji = body.avatarEmoji ?? "";
     const avatarColor = body.avatarColor ?? "";
+    const password = body.password ?? "";
 
     if (groupName.length < 1 || groupName.length > 60) {
       throw new AppError("Le nom du groupe doit contenir entre 1 et 60 caractères.");
@@ -28,6 +31,9 @@ export async function POST(request: Request) {
     }
     if (!isValidAvatarEmoji(avatarEmoji) || !isValidAvatarColor(avatarColor)) {
       throw new AppError("Choisis un avatar dans la palette proposée.");
+    }
+    if (password.length < 4 || password.length > 72) {
+      throw new AppError("Ton mot de passe doit contenir entre 4 et 72 caractères.");
     }
 
     let code = "";
@@ -53,6 +59,8 @@ export async function POST(request: Request) {
       throw new AppError("Impossible de créer le groupe. Réessaie.", 500);
     }
 
+    const passwordHash = await hashPassword(password);
+
     const { data: member, error: memberError } = await supabaseAdmin
       .from("members")
       .insert({
@@ -61,6 +69,7 @@ export async function POST(request: Request) {
         avatar_emoji: avatarEmoji,
         avatar_color: avatarColor,
         is_admin: true,
+        password_hash: passwordHash,
       })
       .select("id, token")
       .single();

@@ -36,6 +36,11 @@ export default function HomePage() {
               Rejoindre un groupe
             </Button>
           </Link>
+          <Link href="/connexion" className="w-full">
+            <Button variant="ghost" size="lg" className="w-full">
+              Se connecter
+            </Button>
+          </Link>
         </div>
 
         {lastGroup && (

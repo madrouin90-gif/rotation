@@ -12,6 +12,7 @@ export interface GroupSettings {
   archives_visible: boolean;
   highlight_top_pick: boolean;
   allowed_types: SpotifyItemType[];
+  genre_tags: string[];
 }
 
 export interface Group {
@@ -29,6 +30,7 @@ export interface Member {
   avatar_emoji: string;
   avatar_color: string;
   is_admin: boolean;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -48,6 +50,7 @@ export interface Item {
   title: string;
   artist_name: string | null;
   artwork_url: string | null;
+  genres: string[];
   first_added_at: string;
   rating?: RatingInfo;
 }

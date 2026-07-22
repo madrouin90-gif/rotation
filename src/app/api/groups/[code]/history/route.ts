@@ -16,6 +16,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
 
     const url = new URL(request.url);
     const memberIdsParam = url.searchParams.get("memberIds");
+    const genresParam = url.searchParams.get("genres");
     const fromParam = url.searchParams.get("from");
     const toParam = url.searchParams.get("to");
     const limitParam = url.searchParams.get("limit");
@@ -71,6 +72,33 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
       if (valid.length > 0) filterMemberIds = valid;
     }
 
+    // Filtre genre appliqué en 2 temps : les genres vivent sur `items`, pas sur `share_events`,
+    // donc on résout d'abord les item_id correspondants avant de filtrer les événements.
+    let filterItemIds: string[] | null = null;
+    if (genresParam) {
+      const requestedGenres = genresParam
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      if (requestedGenres.length > 0) {
+        const { data: matchingItems, error: itemsError } = await supabaseAdmin
+          .from("items")
+          .select("id")
+          .in("member_id", filterMemberIds.length > 0 ? filterMemberIds : ["00000000-0000-0000-0000-000000000000"])
+          .overlaps("genres", requestedGenres);
+
+        if (itemsError) {
+          throw new AppError("Impossible de filtrer par genre.", 500);
+        }
+
+        filterItemIds = (matchingItems ?? []).map((i) => i.id);
+        if (filterItemIds.length === 0) {
+          return NextResponse.json({ events: [] });
+        }
+      }
+    }
+
     let query = supabaseAdmin
       .from("share_events")
       .select("id, occurred_at, member_id, item_id, items(*)")
@@ -80,6 +108,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
 
     if (fromIso) query = query.gte("occurred_at", fromIso);
     if (toIso) query = query.lte("occurred_at", toIso);
+    if (filterItemIds) query = query.in("item_id", filterItemIds);
 
     const { data: eventRows, error: eventsError } = await query;
 

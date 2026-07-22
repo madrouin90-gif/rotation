@@ -30,7 +30,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const { data: items, error: itemsError } = await supabaseAdmin
       .from("items")
-      .select("id, member_id, spotify_id, spotify_url, type, title, artist_name, artwork_url, first_added_at")
+      .select("id, member_id, spotify_id, spotify_url, type, title, artist_name, artwork_url, genres, first_added_at")
       .eq("member_id", target.id)
       .order("first_added_at", { ascending: false });
 

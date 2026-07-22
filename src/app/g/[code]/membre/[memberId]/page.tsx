@@ -58,6 +58,16 @@ export default function MemberPage() {
       </div>
     );
   }
+  if (!member.is_active) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center text-center px-6 gap-3">
+        <p className="text-muted">Ce membre a été désactivé par l&apos;admin de ce groupe.</p>
+        <Link href={`/g/${code}`} className="text-accent hover:underline">
+          Retour au groupe
+        </Link>
+      </div>
+    );
+  }
 
   const selectedShare = selectedShareId ? member.shares.find((s) => s.id === selectedShareId) : null;
 

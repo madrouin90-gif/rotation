@@ -27,7 +27,8 @@ export function GroupWall({
   onRated,
   onAddShare,
 }: GroupWallProps) {
-  const totalShares = members.reduce((sum, m) => sum + m.shares.length, 0);
+  const activeMembers = members.filter((m) => m.is_active);
+  const totalShares = activeMembers.reduce((sum, m) => sum + m.shares.length, 0);
 
   if (totalShares === 0) {
     return (
@@ -42,7 +43,7 @@ export function GroupWall({
   }
 
   if (sortMode === "date") {
-    const allShares = members.flatMap((m) => m.shares.map((s) => ({ share: s, member: m })));
+    const allShares = activeMembers.flatMap((m) => m.shares.map((s) => ({ share: s, member: m })));
     allShares.sort((a, b) => new Date(b.share.added_at).getTime() - new Date(a.share.added_at).getTime());
 
     return (
@@ -67,7 +68,7 @@ export function GroupWall({
 
   return (
     <div className="flex gap-4 overflow-x-auto p-4 sm:p-6">
-      {members.map((member) => (
+      {activeMembers.map((member) => (
         <MemberColumn
           key={member.id}
           member={member}

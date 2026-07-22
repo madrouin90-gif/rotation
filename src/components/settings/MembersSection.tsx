@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
 import { useToast } from "@/components/ui/Toast";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import type { MemberWithShares } from "@/types";
@@ -19,6 +20,10 @@ export function MembersSection({ token, groupCode, members, meMemberId, onRefres
   const { showError, showSuccess } = useToast();
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [renamingBusy, setRenamingBusy] = useState(false);
 
   async function handleRemove(memberId: string) {
     setRemovingId(memberId);
@@ -34,6 +39,43 @@ export function MembersSection({ token, groupCode, members, meMemberId, onRefres
     }
   }
 
+  async function handleToggleActive(memberId: string, nextActive: boolean) {
+    setTogglingId(memberId);
+    try {
+      await apiFetch(`/api/groups/${groupCode}/members/${memberId}`, {
+        method: "PATCH",
+        token,
+        body: { action: "toggle_active", isActive: nextActive },
+      });
+      showSuccess(nextActive ? "Membre réactivé." : "Membre désactivé.");
+      onRefresh();
+    } catch (e) {
+      showError(e instanceof ApiError ? e.message : "Impossible de mettre à jour ce membre.");
+    } finally {
+      setTogglingId(null);
+    }
+  }
+
+  async function handleRename(memberId: string) {
+    const pseudo = renameValue.trim();
+    if (!pseudo) return;
+    setRenamingBusy(true);
+    try {
+      await apiFetch(`/api/groups/${groupCode}/members/${memberId}`, {
+        method: "PATCH",
+        token,
+        body: { action: "rename", pseudo },
+      });
+      showSuccess("Pseudo mis à jour.");
+      setRenamingId(null);
+      onRefresh();
+    } catch (e) {
+      showError(e instanceof ApiError ? e.message : "Impossible de renommer ce membre.");
+    } finally {
+      setRenamingBusy(false);
+    }
+  }
+
   return (
     <section className="flex flex-col gap-4">
       <h2 className="font-display text-xl">Membres ({members.length})</h2>
@@ -42,15 +84,54 @@ export function MembersSection({ token, groupCode, members, meMemberId, onRefres
           <li key={m.id} className="flex items-center gap-3 bg-surface-2 rounded-xl p-3">
             <Avatar emoji={m.avatar_emoji} color={m.avatar_color} size="sm" />
             <div className="flex-1 min-w-0">
-              <p className="font-medium truncate">
-                {m.pseudo}
-                {m.id === meMemberId && <span className="text-muted"> (toi)</span>}
-              </p>
-              {m.is_admin && <span className="text-xs text-accent">Admin</span>}
+              {renamingId === m.id ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    autoFocus
+                    value={renameValue}
+                    maxLength={24}
+                    onChange={(e) => setRenameValue(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleRename(m.id)}
+                    className="py-1.5 text-sm"
+                  />
+                  <Button size="sm" onClick={() => handleRename(m.id)} disabled={renamingBusy || !renameValue.trim()}>
+                    {renamingBusy ? "..." : "Enregistrer"}
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setRenamingId(null)} disabled={renamingBusy}>
+                    Annuler
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setRenamingId(m.id);
+                    setRenameValue(m.pseudo);
+                  }}
+                  className="font-medium truncate hover:text-accent transition cursor-pointer text-left"
+                  title="Renommer"
+                >
+                  {m.pseudo}
+                  {m.id === meMemberId && <span className="text-muted"> (toi)</span>}
+                </button>
+              )}
+              <div className="flex items-center gap-2 mt-0.5">
+                {m.is_admin && <span className="text-xs text-accent">Admin</span>}
+                {!m.is_active && <span className="text-xs bg-surface px-1.5 py-0.5 rounded-full text-muted">Désactivé</span>}
+              </div>
             </div>
 
-            {m.id !== meMemberId && (
-              <>
+            {m.id !== meMemberId && renamingId !== m.id && (
+              <div className="flex items-center gap-2 shrink-0">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleToggleActive(m.id, !m.is_active)}
+                  disabled={togglingId === m.id}
+                >
+                  {togglingId === m.id ? "..." : m.is_active ? "Désactiver" : "Réactiver"}
+                </Button>
+
                 {confirmingId === m.id ? (
                   <div className="flex items-center gap-2">
                     <Button
@@ -70,7 +151,7 @@ export function MembersSection({ token, groupCode, members, meMemberId, onRefres
                     Retirer
                   </Button>
                 )}
-              </>
+              </div>
             )}
           </li>
         ))}

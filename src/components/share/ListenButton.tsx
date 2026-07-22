@@ -1,14 +1,16 @@
+import { spotifyAppUri } from "@/lib/spotifyUri";
+import type { SpotifyItemType } from "@/types";
+
 interface ListenButtonProps {
-  spotifyUrl: string;
+  type: SpotifyItemType;
+  spotifyId: string;
   className?: string;
 }
 
-export function ListenButton({ spotifyUrl, className = "" }: ListenButtonProps) {
+export function ListenButton({ type, spotifyId, className = "" }: ListenButtonProps) {
   return (
     <a
-      href={spotifyUrl}
-      target="_blank"
-      rel="noopener noreferrer"
+      href={spotifyAppUri(type, spotifyId)}
       onClick={(e) => e.stopPropagation()}
       title="Écouter sur Spotify"
       aria-label="Écouter sur Spotify"

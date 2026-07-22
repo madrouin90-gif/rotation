@@ -25,7 +25,7 @@ export function GroupTopBar({ groupName, groupCode, members, meMemberId, isAdmin
 
         <div className="flex items-center gap-2 shrink-0">
           <div className="flex -space-x-2 mr-1">
-            {members.map((m) => (
+            {members.filter((m) => m.is_active).map((m) => (
               <Link key={m.id} href={`/g/${groupCode}/membre/${m.id}`} title={m.pseudo}>
                 <Avatar
                   emoji={m.avatar_emoji}
@@ -43,10 +43,11 @@ export function GroupTopBar({ groupName, groupCode, members, meMemberId, isAdmin
 
           <Link
             href={`/g/${groupCode}/historique`}
-            className="w-9 h-9 rounded-full bg-surface-2 hover:bg-surface-2/70 flex items-center justify-center transition cursor-pointer"
+            className="h-9 rounded-full bg-accent/20 border border-accent/40 hover:bg-accent/30 flex items-center gap-1.5 px-3 transition cursor-pointer text-accent text-sm font-medium"
             title="Historique"
           >
-            🕒
+            <span>🕒</span>
+            <span className="hidden sm:inline">Historique</span>
           </Link>
 
           <Link

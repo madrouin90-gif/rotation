@@ -24,6 +24,7 @@ export function AddShareFlow({ token, settings, myShares, forcedReplaceRank, onC
   const [step, setStep] = useState<Step>("link");
   const [url, setUrl] = useState("");
   const [note, setNote] = useState("");
+  const [genres, setGenres] = useState<string[]>([]);
   const [preview, setPreview] = useState<SpotifyPreview | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -46,6 +47,10 @@ export function AddShareFlow({ token, settings, myShares, forcedReplaceRank, onC
     }
   }
 
+  function toggleGenre(genre: string) {
+    setGenres((prev) => (prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]));
+  }
+
   async function submitShare(replaceRank?: number) {
     if (!preview) return;
     setError(null);
@@ -54,7 +59,7 @@ export function AddShareFlow({ token, settings, myShares, forcedReplaceRank, onC
       await apiFetch("/api/shares", {
         method: "POST",
         token,
-        body: { spotifyUrl: preview.canonicalUrl, note, replaceRank: forcedReplaceRank ?? replaceRank },
+        body: { spotifyUrl: preview.canonicalUrl, note, genres, replaceRank: forcedReplaceRank ?? replaceRank },
       });
       onChanged();
       onClose();
@@ -111,6 +116,29 @@ export function AddShareFlow({ token, settings, myShares, forcedReplaceRank, onC
                 {preview.artistName && <p className="text-sm text-muted truncate">{preview.artistName}</p>}
               </div>
             </div>
+
+            {settings.genre_tags.length > 0 && (
+              <div>
+                <p className="text-xs text-muted mb-2">Genres (optionnel)</p>
+                <div className="flex flex-wrap gap-2">
+                  {settings.genre_tags.map((genre) => {
+                    const selected = genres.includes(genre);
+                    return (
+                      <button
+                        key={genre}
+                        type="button"
+                        onClick={() => toggleGenre(genre)}
+                        className={`px-2.5 py-1.5 rounded-full text-sm border transition cursor-pointer ${
+                          selected ? "bg-accent/20 border-accent text-foreground" : "bg-surface-2 border-border text-muted"
+                        }`}
+                      >
+                        {genre}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {notesEnabled && (
               <div>

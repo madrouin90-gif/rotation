@@ -25,9 +25,16 @@ create table if not exists members (
   avatar_color text not null,
   token uuid not null unique default gen_random_uuid(),
   is_admin boolean not null default false,
+  is_active boolean not null default true,
+  password_hash text,
   created_at timestamptz not null default now(),
   unique (group_id, pseudo)
 );
+
+-- Pour les bases déjà créées avant l'ajout de ces champs : `create table if not exists`
+-- ne modifie pas une table existante, il faut donc les ajouter explicitement.
+alter table members add column if not exists is_active boolean not null default true;
+alter table members add column if not exists password_hash text;
 
 create index if not exists idx_members_token on members(token);
 create index if not exists idx_members_group_id on members(group_id);
@@ -44,11 +51,16 @@ create table if not exists items (
   title text not null,
   artist_name text,
   artwork_url text,
+  genres text[] not null default '{}',
   first_added_at timestamptz not null default now(),
   unique (member_id, spotify_id)
 );
 
+-- Pour les bases déjà créées avant l'ajout de ce champ.
+alter table items add column if not exists genres text[] not null default '{}';
+
 create index if not exists idx_items_member_id on items(member_id);
+create index if not exists idx_items_genres on items using gin(genres);
 
 -- ============================================================
 -- shares — slots actifs
