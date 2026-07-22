@@ -1,0 +1,94 @@
+-- Rotation — schéma Supabase
+-- À exécuter dans l'éditeur SQL du projet Supabase (Dashboard > SQL Editor)
+
+create extension if not exists "pgcrypto";
+
+-- ============================================================
+-- groups
+-- ============================================================
+create table if not exists groups (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  code text not null unique,
+  settings jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+-- ============================================================
+-- members
+-- ============================================================
+create table if not exists members (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid not null references groups(id) on delete cascade,
+  pseudo text not null,
+  avatar_emoji text not null,
+  avatar_color text not null,
+  token uuid not null unique default gen_random_uuid(),
+  is_admin boolean not null default false,
+  created_at timestamptz not null default now(),
+  unique (group_id, pseudo)
+);
+
+create index if not exists idx_members_token on members(token);
+create index if not exists idx_members_group_id on members(group_id);
+
+-- ============================================================
+-- items — registre permanent par membre
+-- ============================================================
+create table if not exists items (
+  id uuid primary key default gen_random_uuid(),
+  member_id uuid not null references members(id) on delete cascade,
+  spotify_id text not null,
+  spotify_url text not null,
+  type text not null check (type in ('track', 'album', 'artist')),
+  title text not null,
+  artist_name text,
+  artwork_url text,
+  first_added_at timestamptz not null default now(),
+  unique (member_id, spotify_id)
+);
+
+create index if not exists idx_items_member_id on items(member_id);
+
+-- ============================================================
+-- shares — slots actifs
+-- ============================================================
+create table if not exists shares (
+  id uuid primary key default gen_random_uuid(),
+  member_id uuid not null references members(id) on delete cascade,
+  item_id uuid not null references items(id) on delete cascade,
+  rank int not null,
+  note text,
+  added_at timestamptz not null default now(),
+  unique (member_id, rank)
+);
+
+create index if not exists idx_shares_member_id on shares(member_id);
+create index if not exists idx_shares_item_id on shares(item_id);
+
+-- ============================================================
+-- reactions
+-- ============================================================
+create table if not exists reactions (
+  id uuid primary key default gen_random_uuid(),
+  share_id uuid not null references shares(id) on delete cascade,
+  member_id uuid not null references members(id) on delete cascade,
+  emoji text not null,
+  created_at timestamptz not null default now(),
+  unique (share_id, member_id, emoji)
+);
+
+create index if not exists idx_reactions_share_id on reactions(share_id);
+
+-- ============================================================
+-- Row Level Security
+-- Toutes les écritures et lectures passent par les routes API
+-- Next.js côté serveur (client Supabase avec la clé service_role,
+-- jamais exposée au navigateur). RLS est activé mais aucune policy
+-- publique n'est définie : la clé anon ne peut rien lire ni écrire.
+-- ============================================================
+alter table groups enable row level security;
+alter table members enable row level security;
+alter table items enable row level security;
+alter table shares enable row level security;
+alter table reactions enable row level security;
