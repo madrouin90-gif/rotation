@@ -8,6 +8,7 @@ import { useGroupData } from "@/hooks/useGroupData";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { SlotGrid } from "@/components/member/SlotGrid";
+import { PasswordForm } from "@/components/member/PasswordForm";
 import { AddShareFlow } from "@/components/add-share/AddShareFlow";
 import { ShareDetailModal } from "@/components/share/ShareDetailModal";
 import { useToast } from "@/components/ui/Toast";
@@ -122,6 +123,8 @@ export default function MemberPage() {
             Voir l&apos;archive →
           </Link>
         </div>
+
+        {isMe && <PasswordForm token={session.token} hasPassword={data.me.hasPassword} onSaved={refresh} />}
 
         <SlotGrid
           shares={member.shares}

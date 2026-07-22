@@ -51,6 +51,24 @@ body {
   border-radius: 999px;
 }
 
+/* Barre de défilement toujours visible (pas seulement au survol) pour naviguer
+   entre les colonnes de membres du mur, avec support Firefox. */
+.wall-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-2) var(--background);
+}
+.wall-scroll::-webkit-scrollbar {
+  height: 12px;
+}
+.wall-scroll::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 2px solid var(--background);
+}
+.wall-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
 @keyframes fade-in-up {
   from {
     opacity: 0;

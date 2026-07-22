@@ -92,6 +92,7 @@ export interface GroupState {
   me: {
     memberId: string;
     isAdmin: boolean;
+    hasPassword: boolean;
   };
 }
 

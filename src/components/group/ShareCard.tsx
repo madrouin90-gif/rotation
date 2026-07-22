@@ -49,7 +49,9 @@ export function ShareCard({
         <button
           type="button"
           onClick={onOpenDetail}
-          className="w-full h-full block cursor-pointer"
+          className={`w-full h-full block ${
+            dragHandleAttributes ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
+          }`}
           {...dragHandleAttributes}
           {...dragHandleListeners}
         >
@@ -79,7 +81,7 @@ export function ShareCard({
         <ListenButton type={item.type} spotifyId={item.spotify_id} className="absolute bottom-2 right-2" />
       </div>
 
-      <div className="p-3 flex flex-col gap-1.5">
+      <div className="p-3 flex flex-col gap-1.5 min-h-[92px]">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-medium truncate">{item.title}</p>
           <span className="text-[10px] text-muted shrink-0">#{share.rank}</span>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { MemberColumn } from "@/components/group/MemberColumn";
 import { ShareCard } from "@/components/group/ShareCard";
 import type { GroupSettings, MemberWithShares, SortMode } from "@/types";
@@ -29,6 +30,11 @@ export function GroupWall({
 }: GroupWallProps) {
   const activeMembers = members.filter((m) => m.is_active);
   const totalShares = activeMembers.reduce((sum, m) => sum + m.shares.length, 0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  function scrollByColumn(direction: 1 | -1) {
+    scrollRef.current?.scrollBy({ left: direction * 260, behavior: "smooth" });
+  }
 
   if (totalShares === 0) {
     return (
@@ -67,20 +73,39 @@ export function GroupWall({
   }
 
   return (
-    <div className="flex gap-4 overflow-x-auto p-4 sm:p-6">
-      {activeMembers.map((member) => (
-        <MemberColumn
-          key={member.id}
-          member={member}
-          settings={settings}
-          isMe={member.id === viewerMemberId}
-          token={token}
-          onOpenDetail={onSelectShare}
-          onRated={onRated}
-          onReorder={onReorder}
-          onAddEmpty={onAddShare}
-        />
-      ))}
+    <div className="relative group/wall">
+      <button
+        type="button"
+        onClick={() => scrollByColumn(-1)}
+        aria-label="Défiler vers la gauche"
+        className="hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-surface-2/90 hover:bg-accent border border-border items-center justify-center text-foreground shadow-lg backdrop-blur-sm transition cursor-pointer"
+      >
+        ‹
+      </button>
+      <button
+        type="button"
+        onClick={() => scrollByColumn(1)}
+        aria-label="Défiler vers la droite"
+        className="hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-surface-2/90 hover:bg-accent border border-border items-center justify-center text-foreground shadow-lg backdrop-blur-sm transition cursor-pointer"
+      >
+        ›
+      </button>
+
+      <div ref={scrollRef} className="wall-scroll flex gap-4 overflow-x-auto p-4 sm:p-6 scroll-smooth">
+        {activeMembers.map((member) => (
+          <MemberColumn
+            key={member.id}
+            member={member}
+            settings={settings}
+            isMe={member.id === viewerMemberId}
+            token={token}
+            onOpenDetail={onSelectShare}
+            onRated={onRated}
+            onReorder={onReorder}
+            onAddEmpty={onAddShare}
+          />
+        ))}
+      </div>
     </div>
   );
 }

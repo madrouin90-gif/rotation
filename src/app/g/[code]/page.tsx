@@ -25,7 +25,7 @@ export default function GroupPage() {
   const params = useParams<{ code: string }>();
   const code = (params.code ?? "").toUpperCase();
   const router = useRouter();
-  const { session, isLoading: sessionLoading } = useMemberSession(code);
+  const { session, isLoading: sessionLoading, removeSession } = useMemberSession(code);
   const { data, error, isLoading, refresh } = useGroupData(code, session?.token ?? null);
   const { showError } = useToast();
 
@@ -88,7 +88,12 @@ export default function GroupPage() {
         members={data.members}
         meMemberId={data.me.memberId}
         isAdmin={data.me.isAdmin}
+        hasPassword={data.me.hasPassword}
         onAddShare={() => setShowAddShare(true)}
+        onLogout={() => {
+          removeSession();
+          router.push("/");
+        }}
       />
 
       <div className="max-w-7xl w-full mx-auto flex-1 flex gap-6">

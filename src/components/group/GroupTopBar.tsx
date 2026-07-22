@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
@@ -11,10 +12,23 @@ interface GroupTopBarProps {
   members: MemberWithShares[];
   meMemberId: string;
   isAdmin: boolean;
+  hasPassword: boolean;
   onAddShare: () => void;
+  onLogout: () => void;
 }
 
-export function GroupTopBar({ groupName, groupCode, members, meMemberId, isAdmin, onAddShare }: GroupTopBarProps) {
+export function GroupTopBar({
+  groupName,
+  groupCode,
+  members,
+  meMemberId,
+  isAdmin,
+  hasPassword,
+  onAddShare,
+  onLogout,
+}: GroupTopBarProps) {
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
+
   return (
     <header className="sticky top-0 z-30 backdrop-blur-md bg-background/80 border-b border-border">
       <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 max-w-6xl mx-auto">
@@ -74,6 +88,27 @@ export function GroupTopBar({ groupName, groupCode, members, meMemberId, isAdmin
           >
             Mon profil
           </Link>
+
+          {confirmingLogout ? (
+            <div className="hidden sm:flex items-center gap-2 text-xs">
+              <span className="text-muted max-w-[10rem]">
+                {hasPassword ? "Confirmer ?" : "Sans mot de passe, tu perdras l'accès !"}
+              </span>
+              <button onClick={onLogout} className="text-red-400 hover:underline cursor-pointer">
+                Confirmer
+              </button>
+              <button onClick={() => setConfirmingLogout(false)} className="text-muted hover:underline cursor-pointer">
+                Annuler
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmingLogout(true)}
+              className="text-xs text-muted hover:text-foreground transition hidden sm:block cursor-pointer"
+            >
+              Se déconnecter
+            </button>
+          )}
         </div>
       </div>
     </header>

@@ -36,6 +36,24 @@ function SortableShareCard({ shareId, ...cardProps }: { shareId: string } & Card
   );
 }
 
+/** Emplacement vide — garantit que les rangs 1..N s'alignent horizontalement entre les colonnes,
+ * peu importe combien de partages chaque membre a réellement. */
+function EmptySlot({ isMe, onAddEmpty }: { isMe: boolean; onAddEmpty: () => void }) {
+  if (!isMe) {
+    return <div className="rounded-2xl border border-dashed border-border/40 aspect-square" />;
+  }
+  return (
+    <button
+      type="button"
+      onClick={onAddEmpty}
+      className="aspect-square rounded-2xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-1 text-muted hover:border-accent hover:text-accent transition cursor-pointer"
+    >
+      <span className="text-2xl">+</span>
+      <span className="text-xs">Ajouter</span>
+    </button>
+  );
+}
+
 export function MemberColumn({
   member,
   settings,
@@ -68,23 +86,28 @@ export function MemberColumn({
     onReorder(next);
   }
 
-  const cards = orderedIds
-    .map((id, index) => {
-      const share = byId.get(id);
-      if (!share) return null;
-      const cardProps: CardProps = {
-        share: { ...share, rank: index + 1 },
-        member,
-        settings,
-        isMe,
-        token,
-        showOwnerAvatar: false,
-        onOpenDetail: () => onOpenDetail(id),
-        onRated,
-      };
-      return isMe ? <SortableShareCard key={id} shareId={id} {...cardProps} /> : <ShareCard key={id} {...cardProps} />;
-    })
-    .filter(Boolean);
+  const slotsPerMember = settings.slots_per_member;
+  const rows = Array.from({ length: Math.max(slotsPerMember, orderedIds.length) }, (_, i) => i);
+
+  const cards = rows.map((index) => {
+    const id = orderedIds[index];
+    if (!id) {
+      return <EmptySlot key={`empty-${index}`} isMe={isMe} onAddEmpty={onAddEmpty} />;
+    }
+    const share = byId.get(id);
+    if (!share) return null;
+    const cardProps: CardProps = {
+      share: { ...share, rank: index + 1 },
+      member,
+      settings,
+      isMe,
+      token,
+      showOwnerAvatar: false,
+      onOpenDetail: () => onOpenDetail(id),
+      onRated,
+    };
+    return isMe ? <SortableShareCard key={id} shareId={id} {...cardProps} /> : <ShareCard key={id} {...cardProps} />;
+  });
 
   return (
     <div className="shrink-0 w-40 sm:w-48 flex flex-col gap-3">
@@ -92,8 +115,6 @@ export function MemberColumn({
         <Avatar emoji={member.avatar_emoji} color={member.avatar_color} size="sm" />
         <span className="font-medium text-sm truncate">{member.pseudo}</span>
       </div>
-
-      {member.shares.length === 0 && <p className="text-xs text-muted px-1">Rien pour l&apos;instant.</p>}
 
       {isMe ? (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -103,16 +124,6 @@ export function MemberColumn({
         </DndContext>
       ) : (
         <div className="flex flex-col gap-3">{cards}</div>
-      )}
-
-      {isMe && (
-        <button
-          type="button"
-          onClick={onAddEmpty}
-          className="rounded-2xl border-2 border-dashed border-border text-muted hover:border-accent hover:text-accent transition cursor-pointer py-3 text-sm"
-        >
-          + Ajouter
-        </button>
       )}
     </div>
   );
