@@ -39,6 +39,7 @@ export default function GroupPage() {
   const [filterMemberIds, setFilterMemberIds] = useState<string[]>([]);
   const [filterGenres, setFilterGenres] = useState<string[]>([]);
   const [showGenreFilter, setShowGenreFilter] = useState(false);
+  const [showMemberFilter, setShowMemberFilter] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<"activity" | "chat">("activity");
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
@@ -184,6 +185,17 @@ export default function GroupPage() {
               {activeMemberCount} membre{activeMemberCount > 1 ? "s" : ""}
             </p>
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setShowMemberFilter((prev) => !prev)}
+                className={`text-xs px-2.5 py-1.5 rounded-full border transition cursor-pointer ${
+                  showMemberFilter || filterMemberIds.length > 0
+                    ? "bg-accent/20 border-accent text-foreground"
+                    : "bg-surface-2 border-border text-muted"
+                }`}
+              >
+                👥 Membres{filterMemberIds.length > 0 ? ` (${filterMemberIds.length})` : ""}
+              </button>
               {data.group.settings.genre_tags.length > 0 && (
                 <button
                   type="button"
@@ -201,14 +213,16 @@ export default function GroupPage() {
             </div>
           </div>
 
-          <div className="pt-3">
-            <MemberFilterBar
-              members={data.members.filter((m) => m.is_active)}
-              selectedIds={filterMemberIds}
-              onToggle={toggleMemberFilter}
-              onReset={() => setFilterMemberIds([])}
-            />
-          </div>
+          {showMemberFilter && (
+            <div className="pt-3">
+              <MemberFilterBar
+                members={data.members.filter((m) => m.is_active)}
+                selectedIds={filterMemberIds}
+                onToggle={toggleMemberFilter}
+                onReset={() => setFilterMemberIds([])}
+              />
+            </div>
+          )}
 
           {showGenreFilter && (
             <div className="pt-2">
