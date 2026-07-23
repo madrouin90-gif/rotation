@@ -34,6 +34,9 @@ export function GroupWall({
 }: GroupWallProps) {
   const activeMembers = members.filter((m) => m.is_active);
   const totalShares = activeMembers.reduce((sum, m) => sum + m.shares.length, 0);
+  // Nombre de rangs partagé par toutes les colonnes (subgrid ci-dessous) : au moins le
+  // nombre de slots configuré, mais jamais moins que ce qu'un membre a réellement.
+  const maxRows = activeMembers.reduce((max, m) => Math.max(max, m.shares.length), settings.slots_per_member);
   const scrollRef = useRef<HTMLDivElement>(null);
   const panState = useRef({ down: false, moved: false, startX: 0, startScrollLeft: 0 });
 
@@ -140,13 +143,15 @@ export function GroupWall({
         ref={scrollRef}
         onMouseDownCapture={handlePanMouseDownCapture}
         onClickCapture={handlePanClickCapture}
-        className="wall-scroll flex gap-4 overflow-x-auto p-4 sm:p-6 scroll-smooth cursor-grab active:cursor-grabbing"
+        className="wall-scroll grid grid-flow-col auto-cols-[8rem] sm:auto-cols-[10rem] items-start gap-x-4 gap-y-3 overflow-x-auto p-4 sm:p-6 scroll-smooth cursor-grab active:cursor-grabbing"
+        style={{ gridTemplateRows: `auto repeat(${maxRows}, auto)` }}
       >
         {activeMembers.map((member) => (
           <MemberColumn
             key={member.id}
             member={member}
             settings={settings}
+            rows={maxRows}
             isMe={member.id === viewerMemberId}
             token={token}
             disableReorder={disableReorder}

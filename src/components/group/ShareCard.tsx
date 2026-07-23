@@ -41,7 +41,7 @@ export function ShareCard({
 
   return (
     <div
-      className={`rounded-2xl overflow-hidden bg-surface-2 flex flex-col transition-shadow duration-200 ${
+      className={`rounded-2xl overflow-hidden bg-surface-2 flex flex-col min-w-0 transition-shadow duration-200 ${
         isTopPick ? "ring-4 ring-accent shadow-2xl shadow-accent/40" : ""
       }`}
     >
