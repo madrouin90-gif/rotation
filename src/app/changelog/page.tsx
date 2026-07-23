@@ -8,6 +8,15 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.1.1",
+    title: "Corrections d'affichage du mur",
+    items: [
+      "Le titre du slot #1 (top pick) ne paraît plus plus gros que les autres.",
+      "Les nouveaux messages du chat de groupe apparaissent maintenant en haut.",
+      "Les rangs s'alignent enfin correctement entre les colonnes de membres, peu importe la longueur du contenu de chaque carte.",
+    ],
+  },
+  {
     version: "2.1",
     title: "Intégration Discord",
     items: [
