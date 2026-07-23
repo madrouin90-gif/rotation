@@ -85,7 +85,13 @@ export function ShareCard({
             <Avatar emoji={member.avatar_emoji} color={member.avatar_color} size="sm" ring />
           </div>
         )}
-        <ListenButton type={item.type} spotifyId={item.spotify_id} className="absolute bottom-2 right-2" />
+        <ListenButton
+          type={item.type}
+          spotifyId={item.spotify_id}
+          itemId={item.id}
+          token={token}
+          className="absolute bottom-2 right-2"
+        />
       </div>
 
       <div className="p-3 flex flex-col gap-1.5 min-h-[92px]">
@@ -99,6 +105,12 @@ export function ShareCard({
         {votesCount > 0 && (
           <p className="text-xs text-accent">
             🏆 {item.rating!.scoreOn100}/100 · {votesCount} vote{votesCount > 1 ? "s" : ""}
+          </p>
+        )}
+        {Boolean(share.listenersCount) && (
+          <p className="text-xs text-muted">
+            🎧 {share.listenersCount} membre{share.listenersCount! > 1 ? "s" : ""} l&apos;
+            {share.listenersCount! > 1 ? "ont" : "a"} écouté
           </p>
         )}
         {!isMe && <RatingWidget itemId={item.id} token={token} myScore={item.rating?.myScore ?? null} onRated={onRated} />}

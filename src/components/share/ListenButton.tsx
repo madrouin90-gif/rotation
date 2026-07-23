@@ -1,17 +1,26 @@
+import { apiFetch } from "@/lib/apiClient";
 import { spotifyAppUri } from "@/lib/spotifyUri";
 import type { SpotifyItemType } from "@/types";
 
 interface ListenButtonProps {
   type: SpotifyItemType;
   spotifyId: string;
+  itemId: string;
+  token: string;
   className?: string;
 }
 
-export function ListenButton({ type, spotifyId, className = "" }: ListenButtonProps) {
+export function ListenButton({ type, spotifyId, itemId, token, className = "" }: ListenButtonProps) {
+  function handleClick(e: React.MouseEvent) {
+    e.stopPropagation();
+    // Fire-and-forget : ne doit jamais retarder ni bloquer l'ouverture de Spotify.
+    apiFetch("/api/engagement", { method: "POST", token, body: { itemId, eventType: "listen" } }).catch(() => {});
+  }
+
   return (
     <a
       href={spotifyAppUri(type, spotifyId)}
-      onClick={(e) => e.stopPropagation()}
+      onClick={handleClick}
       data-no-pan="true"
       title="Écouter sur Spotify"
       aria-label="Écouter sur Spotify"

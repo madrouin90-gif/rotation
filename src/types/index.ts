@@ -83,6 +83,7 @@ export interface Share {
   note: string | null;
   added_at: string;
   item: Item;
+  listenersCount?: number;
 }
 
 export interface Reaction {
@@ -117,6 +118,8 @@ export interface GroupState {
     email: string | null;
     emailVerified: boolean;
     pendingRequestsCount: number;
+    unseenCount: number;
+    lastSeenAt: string | null;
   };
 }
 

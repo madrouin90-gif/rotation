@@ -57,7 +57,10 @@ export function EmailForm({ token, currentEmail, emailVerified, onSaved }: Email
           </p>
         )}
         {currentEmail && !emailVerified && (
-          <p className="text-xs text-accent-2">Courriel en attente de vérification — regarde ta boîte de réception.</p>
+          <p className="text-xs text-accent-2">
+            Courriel non vérifié (ou désinscrit du résumé hebdo) — clique le lien reçu par courriel, ou renvoie une
+            confirmation.
+          </p>
         )}
         {currentEmail && emailVerified && <p className="text-xs text-muted">Courriel vérifié ✓</p>}
         <button

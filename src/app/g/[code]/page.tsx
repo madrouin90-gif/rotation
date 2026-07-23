@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useMemberSession } from "@/hooks/useMemberSession";
 import { useGroupData } from "@/hooks/useGroupData";
 import { GroupTopBar } from "@/components/group/GroupTopBar";
@@ -34,6 +35,19 @@ export default function GroupPage() {
   const [showAddShare, setShowAddShare] = useState(false);
   const [selectedShareId, setSelectedShareId] = useState<string | null>(null);
   const [filterMemberIds, setFilterMemberIds] = useState<string[]>([]);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
+  // Capture le nombre de nouveautés UNE SEULE FOIS, au premier chargement — les polls
+  // suivants remettent `unseenCount` à 0 côté serveur (last_seen_at vient d'être mis à
+  // jour), donc sans cette capture la bannière disparaîtrait dès le 2e poll (~7s).
+  // Ajustement pendant le rendu plutôt qu'un effect, cf. GroupWall/SlotGrid.
+  const [capturedUnseen, setCapturedUnseen] = useState<{ captured: boolean; value: number }>({
+    captured: false,
+    value: 0,
+  });
+  if (data && !capturedUnseen.captured) {
+    setCapturedUnseen({ captured: true, value: data.me.unseenCount });
+  }
 
   useEffect(() => {
     if (!sessionLoading && !session) {
@@ -105,6 +119,28 @@ export default function GroupPage() {
           router.push("/");
         }}
       />
+
+      {capturedUnseen.captured && capturedUnseen.value > 0 && !bannerDismissed && (
+        <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 pt-4">
+          <div className="flex items-center justify-between gap-3 bg-accent/15 border border-accent/30 rounded-xl px-4 py-2.5 text-sm">
+            <span>
+              ✨ {capturedUnseen.value} nouveauté{capturedUnseen.value > 1 ? "s" : ""} depuis ta dernière visite
+            </span>
+            <div className="flex items-center gap-3 shrink-0">
+              <Link href={`/g/${code}/historique`} className="text-accent hover:underline font-medium">
+                Voir
+              </Link>
+              <button
+                onClick={() => setBannerDismissed(true)}
+                className="text-muted hover:text-foreground transition cursor-pointer"
+                aria-label="Fermer"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-7xl w-full mx-auto flex-1 flex gap-6">
         <div className="flex-1 min-w-0 flex flex-col">

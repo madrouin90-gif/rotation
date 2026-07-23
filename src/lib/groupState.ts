@@ -151,6 +151,32 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
 
   const favoriteItemIds = new Set((favoriteRows ?? []).map((f) => f.item_id));
 
+  // Nombre de membres distincts (hors viewer) ayant écouté chacun des items du viewer —
+  // affiché seulement sur ses propres partages ("🎧 N membres l'ont écouté").
+  const myItemIds = Array.from(
+    new Set(shares.filter((s) => s.member_id === viewerMemberId).map((s) => s.item_id))
+  );
+
+  const listenersByItem = new Map<string, Set<string>>();
+  if (myItemIds.length > 0) {
+    const { data: listenRows, error: listenError } = await supabaseAdmin
+      .from("engagement_events")
+      .select("item_id, member_id")
+      .in("item_id", myItemIds)
+      .eq("event_type", "listen");
+
+    if (listenError) {
+      throw new AppError("Impossible de charger les écoutes.", 500);
+    }
+
+    for (const row of listenRows ?? []) {
+      if (row.member_id === viewerMemberId) continue;
+      const set = listenersByItem.get(row.item_id) ?? new Set<string>();
+      set.add(row.member_id);
+      listenersByItem.set(row.item_id, set);
+    }
+  }
+
   // Rang d'apparition des membres basé sur la dernière mise à jour de leur liste
   // (dernier `added_at` parmi leurs partages actifs), le plus récent en premier.
   // Les membres sans partage actif restent en fin de liste, dans l'ordre d'arrivée.
@@ -202,6 +228,7 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
             isFavorite: favoriteItemIds.has(s.item_id),
           },
           reactions: reactionsByShare.get(s.id) ?? [],
+          listenersCount: s.member_id === viewerMemberId ? (listenersByItem.get(s.item_id)?.size ?? 0) : undefined,
         };
       }),
   }));
@@ -212,9 +239,37 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
   // liste `members` envoyée à tout le monde, seul le viewer a besoin de connaître son propre état.
   const { data: viewerRow } = await supabaseAdmin
     .from("members")
-    .select("password_hash, email, email_verified_at")
+    .select("password_hash, email, email_verified_at, last_seen_at")
     .eq("id", viewerMemberId)
     .maybeSingle();
+
+  const lastSeenAt = viewerRow?.last_seen_at ?? null;
+
+  // Nombre de partages d'autres membres depuis la dernière visite (plafonné à 99 pour
+  // l'affichage). Si le viewer n'a jamais eu de last_seen_at, tout compte.
+  let unseenCount = 0;
+  const otherMemberIds = memberIds.filter((id) => id !== viewerMemberId);
+  if (otherMemberIds.length > 0) {
+    let unseenQuery = supabaseAdmin
+      .from("share_events")
+      .select("id", { count: "exact", head: true })
+      .in("member_id", otherMemberIds);
+    if (lastSeenAt) {
+      unseenQuery = unseenQuery.gt("occurred_at", lastSeenAt);
+    }
+    const { count: unseenRaw } = await unseenQuery;
+    unseenCount = Math.min(unseenRaw ?? 0, 99);
+  }
+
+  // Fire-and-forget : la fraîcheur de last_seen_at ne doit pas bloquer la réponse, et son
+  // échec éventuel ne doit pas faire échouer le chargement du groupe.
+  void supabaseAdmin
+    .from("members")
+    .update({ last_seen_at: new Date().toISOString() })
+    .eq("id", viewerMemberId)
+    .then(({ error }) => {
+      if (error) console.error("last_seen_at update failed", error);
+    });
 
   let pendingRequestsCount = 0;
   if (me?.is_admin) {
@@ -237,6 +292,8 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
       email: viewerRow?.email ?? null,
       emailVerified: Boolean(viewerRow?.email_verified_at),
       pendingRequestsCount,
+      unseenCount,
+      lastSeenAt,
     },
   };
 }

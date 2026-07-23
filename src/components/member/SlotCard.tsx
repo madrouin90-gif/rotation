@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
-import { isShareNew } from "@/lib/dates";
+import { isShareNew, isShareStale, daysSince } from "@/lib/dates";
 import { NoteEditor } from "@/components/share/NoteEditor";
 import { GenreEditor } from "@/components/share/GenreEditor";
 import type { GroupSettings, ShareWithReactions } from "@/types";
@@ -57,6 +57,7 @@ export function SlotCard({
   }
 
   const isNew = isShareNew(share.added_at, settings.new_badge_days);
+  const isStale = isMe && !isNew && isShareStale(share.added_at);
 
   return (
     <div
@@ -87,6 +88,14 @@ export function SlotCard({
       {isNew && (
         <span className="absolute top-2 right-2 text-[10px] font-medium uppercase bg-accent-2 text-white px-2 py-0.5 rounded-full pointer-events-none">
           Nouveau
+        </span>
+      )}
+      {isStale && (
+        <span
+          className="absolute top-2 right-2 text-[10px] font-medium bg-surface/90 text-muted px-2 py-0.5 rounded-full pointer-events-none"
+          title="Ce partage est là depuis longtemps — remplace-le pour relancer le groupe"
+        >
+          🌙 {daysSince(share.added_at)} j
         </span>
       )}
       <span className="absolute bottom-2 left-2 text-[10px] bg-black/50 text-white px-1.5 py-0.5 rounded-full pointer-events-none">

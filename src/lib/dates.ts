@@ -25,3 +25,10 @@ export function isShareNew(addedAt: string, newBadgeDays: number): boolean {
   if (newBadgeDays <= 0) return false;
   return daysSince(addedAt) < newBadgeDays;
 }
+
+// TODO(revue): rendre configurable par groupe si demandé — pour l'instant fixe pour tous.
+export const STALE_SLOT_DAYS = 30;
+
+export function isShareStale(addedAt: string): boolean {
+  return daysSince(addedAt) >= STALE_SLOT_DAYS;
+}
