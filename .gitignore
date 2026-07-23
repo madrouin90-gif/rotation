@@ -33,6 +33,10 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 !.env.local.example
+!discord-bot/.env.example
+
+# discord-bot — sous-projet Node à part, déployé séparément (Railway)
+discord-bot/node_modules
 
 # vercel
 .vercel
