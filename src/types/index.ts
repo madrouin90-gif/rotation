@@ -34,6 +34,7 @@ export interface Member {
   is_admin: boolean;
   is_active: boolean;
   is_owner: boolean;
+  isOnline: boolean;
   created_at: string;
 }
 
@@ -57,6 +58,15 @@ export interface Comment {
   createdAt: string;
   author: CommentAuthor;
   shareId: string | null;
+}
+
+export interface ChatEntry {
+  id: string;
+  kind: "comment" | "message";
+  body: string;
+  createdAt: string;
+  author: CommentAuthor;
+  item: { id: string; title: string; type: SpotifyItemType; spotifyId: string } | null;
 }
 
 export interface Item {

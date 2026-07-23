@@ -8,7 +8,9 @@ import { useGroupData } from "@/hooks/useGroupData";
 import { GroupTopBar } from "@/components/group/GroupTopBar";
 import { GroupWall } from "@/components/group/GroupWall";
 import { MemberFilterBar } from "@/components/group/MemberFilterBar";
+import { GenreFilterBar } from "@/components/group/GenreFilterBar";
 import { RecentActivitySidebar } from "@/components/group/RecentActivitySidebar";
+import { GroupChatPanel } from "@/components/group/GroupChatPanel";
 import { SortToggle } from "@/components/group/SortToggle";
 import { AddShareFlow } from "@/components/add-share/AddShareFlow";
 import { ShareDetailModal } from "@/components/share/ShareDetailModal";
@@ -35,6 +37,9 @@ export default function GroupPage() {
   const [showAddShare, setShowAddShare] = useState(false);
   const [selectedShareId, setSelectedShareId] = useState<string | null>(null);
   const [filterMemberIds, setFilterMemberIds] = useState<string[]>([]);
+  const [filterGenres, setFilterGenres] = useState<string[]>([]);
+  const [showGenreFilter, setShowGenreFilter] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<"activity" | "chat">("activity");
   const [bannerDismissed, setBannerDismissed] = useState(false);
 
   // Capture le nombre de nouveautés UNE SEULE FOIS, au premier chargement — les polls
@@ -86,8 +91,17 @@ export default function GroupPage() {
     setFilterMemberIds((prev) => (prev.includes(memberId) ? prev.filter((id) => id !== memberId) : [...prev, memberId]));
   }
 
-  const visibleMembers =
-    filterMemberIds.length > 0 ? data.members.filter((m) => filterMemberIds.includes(m.id)) : data.members;
+  function toggleGenreFilter(genre: string) {
+    setFilterGenres((prev) => (prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]));
+  }
+
+  const activeMemberCount = data.members.filter((m) => m.is_active).length;
+
+  const visibleMembers = data.members
+    .filter((m) => filterMemberIds.length === 0 || filterMemberIds.includes(m.id))
+    .filter(
+      (m) => filterGenres.length === 0 || m.shares.some((s) => s.item.genres.some((g) => filterGenres.includes(g)))
+    );
 
   async function handleReorder(orderedShareIds: string[]) {
     try {
@@ -100,6 +114,24 @@ export default function GroupPage() {
     } catch (e) {
       showError(e instanceof ApiError ? e.message : "Impossible de réordonner tes slots.");
       refresh();
+    }
+  }
+
+  async function handleSaveNote(shareId: string, note: string) {
+    try {
+      await apiFetch(`/api/shares/${shareId}`, { method: "PATCH", token: session!.token, body: { note } });
+      refresh();
+    } catch (e) {
+      showError(e instanceof ApiError ? e.message : "Impossible d'enregistrer la note.");
+    }
+  }
+
+  async function handleSaveGenres(shareId: string, genres: string[]) {
+    try {
+      await apiFetch(`/api/shares/${shareId}`, { method: "PATCH", token: session!.token, body: { genres } });
+      refresh();
+    } catch (e) {
+      showError(e instanceof ApiError ? e.message : "Impossible d'enregistrer les genres.");
     }
   }
 
@@ -146,9 +178,24 @@ export default function GroupPage() {
         <div className="flex-1 min-w-0 flex flex-col">
           <div className="flex items-center justify-between px-4 sm:px-6 pt-4">
             <p className="text-sm text-muted">
-              {data.members.length} membre{data.members.length > 1 ? "s" : ""}
+              {activeMemberCount} membre{activeMemberCount > 1 ? "s" : ""}
             </p>
-            {sortMode && <SortToggle value={sortMode} onChange={setSortModeOverride} />}
+            <div className="flex items-center gap-2">
+              {data.group.settings.genre_tags.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowGenreFilter((prev) => !prev)}
+                  className={`text-xs px-2.5 py-1.5 rounded-full border transition cursor-pointer ${
+                    showGenreFilter || filterGenres.length > 0
+                      ? "bg-accent/20 border-accent text-foreground"
+                      : "bg-surface-2 border-border text-muted"
+                  }`}
+                >
+                  🎵 Genres{filterGenres.length > 0 ? ` (${filterGenres.length})` : ""}
+                </button>
+              )}
+              {sortMode && <SortToggle value={sortMode} onChange={setSortModeOverride} />}
+            </div>
           </div>
 
           <div className="pt-3">
@@ -159,6 +206,17 @@ export default function GroupPage() {
               onReset={() => setFilterMemberIds([])}
             />
           </div>
+
+          {showGenreFilter && (
+            <div className="pt-2">
+              <GenreFilterBar
+                genres={data.group.settings.genre_tags}
+                selectedGenres={filterGenres}
+                onToggle={toggleGenreFilter}
+                onReset={() => setFilterGenres([])}
+              />
+            </div>
+          )}
 
           {sortMode && (
             <GroupWall
@@ -175,8 +233,37 @@ export default function GroupPage() {
           )}
         </div>
 
-        <aside className="hidden lg:block w-72 shrink-0 py-4 pr-4">
-          <RecentActivitySidebar groupCode={data.group.code} token={session.token} />
+        <aside className="hidden lg:flex flex-col w-72 shrink-0 py-4 pr-4">
+          <div className="flex gap-1 mb-3 px-1">
+            <button
+              type="button"
+              onClick={() => setSidebarTab("activity")}
+              className={`text-xs px-2.5 py-1.5 rounded-full transition cursor-pointer ${
+                sidebarTab === "activity" ? "bg-accent/20 text-foreground" : "text-muted hover:text-foreground"
+              }`}
+            >
+              Activité
+            </button>
+            <button
+              type="button"
+              onClick={() => setSidebarTab("chat")}
+              className={`text-xs px-2.5 py-1.5 rounded-full transition cursor-pointer ${
+                sidebarTab === "chat" ? "bg-accent/20 text-foreground" : "text-muted hover:text-foreground"
+              }`}
+            >
+              Chat
+            </button>
+          </div>
+          {sidebarTab === "activity" ? (
+            <RecentActivitySidebar groupCode={data.group.code} token={session.token} />
+          ) : (
+            <GroupChatPanel
+              groupCode={data.group.code}
+              token={session.token}
+              myMemberId={data.me.memberId}
+              isAdmin={data.me.isAdmin}
+            />
+          )}
         </aside>
       </div>
 
@@ -201,6 +288,8 @@ export default function GroupPage() {
           isAdmin={data.me.isAdmin}
           onClose={() => setSelectedShareId(null)}
           onChanged={refresh}
+          onSaveNote={(note) => handleSaveNote(selectedShare.share.id, note)}
+          onSaveGenres={(genres) => handleSaveGenres(selectedShare.share.id, genres)}
         />
       )}
     </div>

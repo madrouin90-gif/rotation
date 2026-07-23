@@ -197,6 +197,8 @@ export default function MemberPage() {
           isAdmin={data.me.isAdmin}
           onClose={() => setSelectedShareId(null)}
           onChanged={refresh}
+          onSaveNote={(note) => handleSaveNote(selectedShare.id, note)}
+          onSaveGenres={(genres) => handleSaveGenres(selectedShare.id, genres)}
         />
       )}
     </div>

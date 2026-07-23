@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
+import { useToast } from "@/components/ui/Toast";
 import type { MemberWithShares } from "@/types";
 
 interface GroupTopBarProps {
@@ -30,6 +31,17 @@ export function GroupTopBar({
   onLogout,
 }: GroupTopBarProps) {
   const [confirmingLogout, setConfirmingLogout] = useState(false);
+  const { showSuccess, showError } = useToast();
+
+  async function handleInvite() {
+    const url = `${window.location.origin}/rejoindre?code=${groupCode}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      showSuccess("Lien d'invitation copié !");
+    } catch {
+      showError("Impossible de copier le lien. Voici le code : " + groupCode);
+    }
+  }
 
   return (
     <header className="sticky top-0 z-30 backdrop-blur-md bg-background/80 border-b border-border">
@@ -37,11 +49,19 @@ export function GroupTopBar({
         <div className="flex items-center gap-3 min-w-0">
           <h1 className="font-display text-xl truncate">{groupName}</h1>
           <span className="hidden sm:inline text-xs text-muted bg-surface-2 px-2 py-1 rounded-full">{groupCode}</span>
+          <button
+            type="button"
+            onClick={handleInvite}
+            className="hidden sm:flex items-center gap-1 text-xs text-accent hover:underline cursor-pointer shrink-0"
+            title="Copier le lien d'invitation"
+          >
+            🔗 Inviter
+          </button>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
           <div className="flex -space-x-2 mr-1">
-            {members.filter((m) => m.is_active).map((m) => (
+            {members.filter((m) => m.is_active && m.isOnline).map((m) => (
               <Link key={m.id} href={`/g/${groupCode}/membre/${m.id}`} title={m.pseudo}>
                 <Avatar
                   emoji={m.avatar_emoji}
@@ -64,6 +84,14 @@ export function GroupTopBar({
           >
             <span>🕒</span>
             <span className="hidden sm:inline">Historique</span>
+          </Link>
+
+          <Link
+            href={`/g/${groupCode}/chat`}
+            className="w-9 h-9 rounded-full bg-surface-2 hover:bg-surface-2/70 flex items-center justify-center transition cursor-pointer lg:hidden"
+            title="Chat du groupe"
+          >
+            💬
           </Link>
 
           <Link

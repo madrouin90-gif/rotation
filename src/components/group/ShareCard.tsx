@@ -102,6 +102,22 @@ export function ShareCard({
         {item.artist_name && <p className="text-xs text-muted truncate">{item.artist_name}</p>}
         {item.genres.length > 0 && <p className="text-[11px] text-muted truncate">{item.genres.join(", ")}</p>}
         {showDate && <p className="text-[11px] text-muted">{formatDateFr(share.added_at)}</p>}
+        {share.reactions.some((r) => r.count > 0) && (
+          <div className="flex flex-wrap gap-1">
+            {share.reactions
+              .filter((r) => r.count > 0)
+              .map((r) => (
+                <span
+                  key={r.emoji}
+                  className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] ${
+                    r.reactedByMe ? "bg-accent/20 text-foreground" : "bg-surface text-muted"
+                  }`}
+                >
+                  {r.emoji} {r.count}
+                </span>
+              ))}
+          </div>
+        )}
         {votesCount > 0 && (
           <p className="text-xs text-accent">
             🏆 {item.rating!.scoreOn100}/100 · {votesCount} vote{votesCount > 1 ? "s" : ""}

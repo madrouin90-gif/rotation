@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/Button";
 import { ReactionBar } from "@/components/share/ReactionBar";
 import { RatingWidget } from "@/components/share/RatingWidget";
 import { SpotifyEmbedPlayer } from "@/components/share/SpotifyEmbedPlayer";
+import { NoteEditor } from "@/components/share/NoteEditor";
+import { GenreEditor } from "@/components/share/GenreEditor";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { formatDateFr } from "@/lib/dates";
 import { useToast } from "@/components/ui/Toast";
@@ -24,6 +26,8 @@ interface ShareDetailModalProps {
   isAdmin: boolean;
   onClose: () => void;
   onChanged: () => void;
+  onSaveNote?: (note: string) => Promise<void> | void;
+  onSaveGenres?: (genres: string[]) => Promise<void> | void;
 }
 
 export function ShareDetailModal({
@@ -36,12 +40,16 @@ export function ShareDetailModal({
   isAdmin,
   onClose,
   onChanged,
+  onSaveNote,
+  onSaveGenres,
 }: ShareDetailModalProps) {
   const { showError } = useToast();
   const [pending, setPending] = useState(false);
   const [favoritePending, setFavoritePending] = useState(false);
   const [commentBody, setCommentBody] = useState("");
   const [postingComment, setPostingComment] = useState(false);
+  const [editingNote, setEditingNote] = useState(false);
+  const [editingGenres, setEditingGenres] = useState(false);
 
   const { item } = share;
   const comments: Comment[] = item.comments ?? [];
@@ -146,7 +154,31 @@ export function ShareDetailModal({
               </span>
               <h2 className="font-display text-2xl sm:text-3xl leading-tight">{item.title}</h2>
               {item.artist_name && <p className="text-muted text-lg">{item.artist_name}</p>}
-              {item.genres.length > 0 && <p className="text-sm text-muted">{item.genres.join(", ")}</p>}
+
+              {isMe && onSaveGenres && settings.genre_tags.length > 0 ? (
+                editingGenres ? (
+                  <GenreEditor
+                    initialGenres={item.genres}
+                    availableGenres={settings.genre_tags}
+                    onCancel={() => setEditingGenres(false)}
+                    onSave={async (genres) => {
+                      await onSaveGenres(genres);
+                      setEditingGenres(false);
+                    }}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setEditingGenres(true)}
+                    className="text-sm text-muted hover:text-accent transition cursor-pointer text-left w-fit"
+                  >
+                    {item.genres.length > 0 ? item.genres.join(", ") : "+ Ajouter des genres"}
+                  </button>
+                )
+              ) : (
+                item.genres.length > 0 && <p className="text-sm text-muted">{item.genres.join(", ")}</p>
+              )}
+
               <p className="text-xs text-muted mt-2">
                 Ajouté pour la 1<sup>re</sup> fois le {formatDateFr(item.first_added_at)}
               </p>
@@ -161,14 +193,42 @@ export function ShareDetailModal({
 
           <SpotifyEmbedPlayer type={item.type} spotifyId={item.spotify_id} />
 
-          {share.note && (
+          {isMe && onSaveNote && settings.note_max_length > 0 ? (
             <div className="flex gap-3 items-start bg-surface-2 rounded-2xl p-4">
               <Avatar emoji={member.avatar_emoji} color={member.avatar_color} size="sm" />
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium mb-0.5">{member.pseudo}</p>
-                <p className="text-sm text-muted">{share.note}</p>
+                {editingNote ? (
+                  <NoteEditor
+                    initialNote={share.note ?? ""}
+                    maxLength={settings.note_max_length}
+                    onCancel={() => setEditingNote(false)}
+                    onSave={async (note) => {
+                      await onSaveNote(note);
+                      setEditingNote(false);
+                    }}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setEditingNote(true)}
+                    className="text-sm text-muted hover:text-accent transition cursor-pointer text-left w-full"
+                  >
+                    {share.note ? `"${share.note}"` : "+ Ajouter une note"}
+                  </button>
+                )}
               </div>
             </div>
+          ) : (
+            share.note && (
+              <div className="flex gap-3 items-start bg-surface-2 rounded-2xl p-4">
+                <Avatar emoji={member.avatar_emoji} color={member.avatar_color} size="sm" />
+                <div>
+                  <p className="text-sm font-medium mb-0.5">{member.pseudo}</p>
+                  <p className="text-sm text-muted">{share.note}</p>
+                </div>
+              </div>
+            )
           )}
 
           <ReactionBar

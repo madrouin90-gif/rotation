@@ -4,7 +4,12 @@ const formatter = new Intl.DateTimeFormat("fr-FR", {
   year: "numeric",
 });
 
-/** Formate une date en français avec "1er" pour le premier jour du mois. */
+const timeFormatter = new Intl.DateTimeFormat("fr-FR", {
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/** Formate une date+heure en français avec "1er" pour le premier jour du mois. */
 export function formatDateFr(isoDate: string): string {
   const date = new Date(isoDate);
   const day = date.getDate();
@@ -12,7 +17,7 @@ export function formatDateFr(isoDate: string): string {
   const month = parts.find((p) => p.type === "month")?.value ?? "";
   const year = parts.find((p) => p.type === "year")?.value ?? "";
   const dayLabel = day === 1 ? "1er" : String(day);
-  return `${dayLabel} ${month} ${year}`;
+  return `${dayLabel} ${month} ${year}, ${timeFormatter.format(date)}`;
 }
 
 export function daysSince(isoDate: string): number {

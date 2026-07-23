@@ -32,7 +32,7 @@ interface ShareRow {
 export async function buildGroupState(group: Group, viewerMemberId: string): Promise<GroupState> {
   const { data: memberRows, error: membersError } = await supabaseAdmin
     .from("members")
-    .select("id, group_id, pseudo, avatar_emoji, avatar_color, is_admin, is_owner, is_active, created_at")
+    .select("id, group_id, pseudo, avatar_emoji, avatar_color, is_admin, is_owner, is_active, created_at, last_seen_at")
     .eq("group_id", group.id)
     .eq("approval_status", "approved")
     .order("created_at", { ascending: true });
@@ -199,39 +199,51 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
     return a.created_at.localeCompare(b.created_at);
   });
 
-  const members: MemberWithShares[] = sortedMemberRows.map((m) => ({
-    ...m,
-    shares: shares
-      .filter((s) => s.member_id === m.id)
-      .sort((a, b) => a.rank - b.rank)
-      .map((s) => {
-        const itemRatings = ratingsByItem.get(s.item_id) ?? [];
-        const aggregate = computeRatingAggregate(itemRatings.map((r) => r.score));
-        const myRating = itemRatings.find((r) => r.rater_member_id === viewerMemberId);
+  // "En ligne" = dernier poll reçu il y a moins de ONLINE_THRESHOLD_MS. Le polling tourne
+  // à 7s (voir useGroupData), donc 30s tolère largement la latence sans afficher quelqu'un
+  // qui vient de fermer l'onglet comme encore présent. Booléen calculé côté serveur plutôt
+  // que d'exposer last_seen_at brut, pour éviter tout souci de décalage d'horloge client.
+  const ONLINE_THRESHOLD_MS = 30 * 1000;
 
-        return {
-          id: s.id,
-          member_id: s.member_id,
-          item_id: s.item_id,
-          rank: s.rank,
-          note: s.note,
-          added_at: s.added_at,
-          item: {
-            ...s.items,
-            rating: {
-              average: aggregate?.average ?? 0,
-              scoreOn100: aggregate?.scoreOn100 ?? 0,
-              votesCount: aggregate?.votesCount ?? 0,
-              myScore: myRating ? myRating.score : null,
+  const members: MemberWithShares[] = sortedMemberRows.map((m) => {
+    const { last_seen_at, ...memberFields } = m;
+    const isOnline = Boolean(last_seen_at) && Date.now() - new Date(last_seen_at!).getTime() < ONLINE_THRESHOLD_MS;
+
+    return {
+      ...memberFields,
+      isOnline,
+      shares: shares
+        .filter((s) => s.member_id === m.id)
+        .sort((a, b) => a.rank - b.rank)
+        .map((s) => {
+          const itemRatings = ratingsByItem.get(s.item_id) ?? [];
+          const aggregate = computeRatingAggregate(itemRatings.map((r) => r.score));
+          const myRating = itemRatings.find((r) => r.rater_member_id === viewerMemberId);
+
+          return {
+            id: s.id,
+            member_id: s.member_id,
+            item_id: s.item_id,
+            rank: s.rank,
+            note: s.note,
+            added_at: s.added_at,
+            item: {
+              ...s.items,
+              rating: {
+                average: aggregate?.average ?? 0,
+                scoreOn100: aggregate?.scoreOn100 ?? 0,
+                votesCount: aggregate?.votesCount ?? 0,
+                myScore: myRating ? myRating.score : null,
+              },
+              comments: commentsByItem.get(s.item_id) ?? [],
+              isFavorite: favoriteItemIds.has(s.item_id),
             },
-            comments: commentsByItem.get(s.item_id) ?? [],
-            isFavorite: favoriteItemIds.has(s.item_id),
-          },
-          reactions: reactionsByShare.get(s.id) ?? [],
-          listenersCount: s.member_id === viewerMemberId ? (listenersByItem.get(s.item_id)?.size ?? 0) : undefined,
-        };
-      }),
-  }));
+            reactions: reactionsByShare.get(s.id) ?? [],
+            listenersCount: s.member_id === viewerMemberId ? (listenersByItem.get(s.item_id)?.size ?? 0) : undefined,
+          };
+        }),
+    };
+  });
 
   const me = memberRows.find((m) => m.id === viewerMemberId);
 
