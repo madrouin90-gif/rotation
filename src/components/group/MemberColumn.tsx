@@ -13,6 +13,7 @@ interface MemberColumnProps {
   settings: GroupSettings;
   isMe: boolean;
   token: string;
+  disableReorder?: boolean;
   onOpenDetail: (shareId: string) => void;
   onRated: () => void;
   onReorder: (orderedShareIds: string[]) => void;
@@ -60,12 +61,17 @@ export function MemberColumn({
   settings,
   isMe,
   token,
+  disableReorder,
   onOpenDetail,
   onRated,
   onReorder,
   onAddEmpty,
 }: MemberColumnProps) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { delay: 150, tolerance: 6 } }));
+  // Le réordonnancement envoie l'ensemble complet des IDs de partages du membre au serveur
+  // (le RPC reorder_shares rejette tout sous-ensemble) — désactivé pendant qu'un filtre
+  // de genre masque certaines cartes, sinon le glisser-déposer échouerait silencieusement.
+  const canReorder = isMe && !disableReorder;
 
   // Ordre local optimiste (feedback instantané pendant le drag), resynchronisé avec le
   // serveur quand le set de partages change — même pattern que SlotGrid.tsx.
@@ -107,7 +113,11 @@ export function MemberColumn({
       onOpenDetail: () => onOpenDetail(id),
       onRated,
     };
-    return isMe ? <SortableShareCard key={id} shareId={id} {...cardProps} /> : <ShareCard key={id} {...cardProps} />;
+    return canReorder ? (
+      <SortableShareCard key={id} shareId={id} {...cardProps} />
+    ) : (
+      <ShareCard key={id} {...cardProps} />
+    );
   });
 
   return (
@@ -117,7 +127,7 @@ export function MemberColumn({
         <span className="font-medium text-sm truncate">{member.pseudo}</span>
       </div>
 
-      {isMe ? (
+      {canReorder ? (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
             <div className="flex flex-col gap-3">{cards}</div>

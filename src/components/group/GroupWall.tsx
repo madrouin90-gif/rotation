@@ -13,6 +13,7 @@ interface GroupWallProps {
   sortMode: SortMode;
   viewerMemberId: string;
   token: string;
+  disableReorder?: boolean;
   onSelectShare: (shareId: string) => void;
   onReorder: (orderedShareIds: string[]) => void;
   onRated: () => void;
@@ -25,6 +26,7 @@ export function GroupWall({
   sortMode,
   viewerMemberId,
   token,
+  disableReorder,
   onSelectShare,
   onReorder,
   onRated,
@@ -147,6 +149,7 @@ export function GroupWall({
             settings={settings}
             isMe={member.id === viewerMemberId}
             token={token}
+            disableReorder={disableReorder}
             onOpenDetail={onSelectShare}
             onRated={onRated}
             onReorder={onReorder}

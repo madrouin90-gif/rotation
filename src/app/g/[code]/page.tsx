@@ -99,9 +99,12 @@ export default function GroupPage() {
 
   const visibleMembers = data.members
     .filter((m) => filterMemberIds.length === 0 || filterMemberIds.includes(m.id))
-    .filter(
-      (m) => filterGenres.length === 0 || m.shares.some((s) => s.item.genres.some((g) => filterGenres.includes(g)))
-    );
+    .map((m) =>
+      filterGenres.length === 0
+        ? m
+        : { ...m, shares: m.shares.filter((s) => s.item.genres.some((g) => filterGenres.includes(g))) }
+    )
+    .filter((m) => filterGenres.length === 0 || m.shares.length > 0);
 
   async function handleReorder(orderedShareIds: string[]) {
     try {
@@ -225,6 +228,7 @@ export default function GroupPage() {
               sortMode={sortMode}
               viewerMemberId={data.me.memberId}
               token={session.token}
+              disableReorder={filterGenres.length > 0}
               onSelectShare={setSelectedShareId}
               onReorder={handleReorder}
               onRated={refresh}
