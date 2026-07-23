@@ -26,14 +26,14 @@ export default function HomePage() {
         </p>
 
         <div className="w-full flex flex-col gap-3 mt-8">
-          <Link href="/creer" className="w-full">
+          <Link href="/rejoindre" className="w-full">
             <Button variant="primary" size="lg" className="w-full">
-              Créer un groupe
+              Rejoindre un groupe
             </Button>
           </Link>
-          <Link href="/rejoindre" className="w-full">
+          <Link href="/creer" className="w-full">
             <Button variant="secondary" size="lg" className="w-full">
-              Rejoindre un groupe
+              Créer un groupe
             </Button>
           </Link>
           <Link href="/connexion" className="w-full">
