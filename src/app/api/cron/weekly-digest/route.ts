@@ -174,5 +174,14 @@ export async function GET(request: Request) {
     }
   }
 
+  // Purge du journal d'audit (180 jours) : ce cron hebdomadaire est le seul déclencheur
+  // périodique déjà en place, pas besoin d'un 2e cron rien que pour ça.
+  const AUDIT_LOG_RETENTION_DAYS = 180;
+  const auditCutoffIso = new Date(Date.now() - AUDIT_LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+  const { error: purgeError } = await supabaseAdmin.from("audit_log").delete().lt("created_at", auditCutoffIso);
+  if (purgeError) {
+    console.error("weekly-digest: purge audit_log échouée", purgeError);
+  }
+
   return NextResponse.json({ sent, skipped, failed });
 }

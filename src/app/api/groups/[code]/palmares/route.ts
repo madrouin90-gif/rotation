@@ -6,11 +6,20 @@ import { computeRatingAggregate } from "@/lib/ratings";
 import { normalizeGroupCode } from "@/lib/codes";
 import type { Item, PalmaresEntry } from "@/types";
 
+const DEFAULT_LIMIT = 50;
+const MAX_LIMIT = 200;
+
 export async function GET(request: Request, { params }: { params: Promise<{ code: string }> }) {
   try {
     const { code: rawCode } = await params;
     const code = normalizeGroupCode(rawCode);
     const { group } = await requireMemberInGroup(request, code);
+
+    const { searchParams } = new URL(request.url);
+    const limitParam = Number(searchParams.get("limit"));
+    const offsetParam = Number(searchParams.get("offset"));
+    const limit = Number.isInteger(limitParam) && limitParam > 0 ? Math.min(limitParam, MAX_LIMIT) : DEFAULT_LIMIT;
+    const offset = Number.isInteger(offsetParam) && offsetParam >= 0 ? offsetParam : 0;
 
     const { data: memberRows, error: membersError } = await supabaseAdmin
       .from("members")
@@ -97,7 +106,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
       return a.item.first_added_at.localeCompare(b.item.first_added_at);
     });
 
-    return NextResponse.json({ entries });
+    const total = entries.length;
+    const page = entries.slice(offset, offset + limit);
+
+    return NextResponse.json({ entries: page, total, limit, offset });
   } catch (error) {
     return errorResponse(error);
   }

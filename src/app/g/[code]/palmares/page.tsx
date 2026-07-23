@@ -9,6 +9,8 @@ import { apiFetch, ApiError } from "@/lib/apiClient";
 import { spotifyTypeLabelFr } from "@/lib/typeLabels";
 import type { PalmaresEntry } from "@/types";
 
+const PAGE_SIZE = 50;
+
 export default function PalmaresPage() {
   const params = useParams<{ code: string }>();
   const code = (params.code ?? "").toUpperCase();
@@ -16,6 +18,8 @@ export default function PalmaresPage() {
   const { session, isLoading: sessionLoading } = useMemberSession(code);
 
   const [entries, setEntries] = useState<PalmaresEntry[] | null>(null);
+  const [total, setTotal] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -27,10 +31,33 @@ export default function PalmaresPage() {
 
   useEffect(() => {
     if (!session) return;
-    apiFetch<{ entries: PalmaresEntry[] }>(`/api/groups/${code}/palmares`, { token: session.token })
-      .then((res) => setEntries(res.entries))
+    apiFetch<{ entries: PalmaresEntry[]; total: number }>(
+      `/api/groups/${code}/palmares?limit=${PAGE_SIZE}&offset=0`,
+      { token: session.token }
+    )
+      .then((res) => {
+        setEntries(res.entries);
+        setTotal(res.total);
+      })
       .catch((e) => setError(e instanceof ApiError ? e.message : "Impossible de charger le palmarès."));
   }, [session, code]);
+
+  async function loadMore() {
+    if (!session || !entries) return;
+    setLoadingMore(true);
+    try {
+      const res = await apiFetch<{ entries: PalmaresEntry[]; total: number }>(
+        `/api/groups/${code}/palmares?limit=${PAGE_SIZE}&offset=${entries.length}`,
+        { token: session.token }
+      );
+      setEntries([...entries, ...res.entries]);
+      setTotal(res.total);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "Impossible de charger la suite du palmarès.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   if (sessionLoading || !session) return null;
 
@@ -115,6 +142,18 @@ export default function PalmaresPage() {
               );
             })}
           </ul>
+        )}
+
+        {!error && entries && entries.length > 0 && entries.length < total && (
+          <div className="flex justify-center mt-4">
+            <button
+              onClick={loadMore}
+              disabled={loadingMore}
+              className="text-sm text-accent hover:underline cursor-pointer disabled:opacity-50"
+            >
+              {loadingMore ? "Chargement..." : "Voir plus"}
+            </button>
+          </div>
         )}
       </div>
     </div>
