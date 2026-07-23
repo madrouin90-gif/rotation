@@ -11,8 +11,18 @@ create table if not exists groups (
   name text not null,
   code text not null unique,
   settings jsonb not null default '{}'::jsonb,
+  discord_guild_id text,
+  discord_channel_id text,
   created_at timestamptz not null default now()
 );
+
+alter table groups add column if not exists discord_guild_id text;
+alter table groups add column if not exists discord_channel_id text;
+
+-- Empêche deux groupes Rotation de pointer sur le même salon Discord.
+create unique index if not exists idx_groups_discord_channel
+  on groups(discord_guild_id, discord_channel_id)
+  where discord_channel_id is not null;
 
 -- ============================================================
 -- members
@@ -35,6 +45,10 @@ create table if not exists members (
   email_verified_at timestamptz,
   email_verify_token uuid,
   last_seen_at timestamptz,
+  discord_user_id text,
+  discord_username text,
+  discord_link_state uuid,
+  discord_link_state_expires_at timestamptz,
   created_at timestamptz not null default now(),
   unique (group_id, pseudo)
 );
@@ -51,12 +65,25 @@ alter table members add column if not exists email text;
 alter table members add column if not exists email_verified_at timestamptz;
 alter table members add column if not exists email_verify_token uuid;
 alter table members add column if not exists last_seen_at timestamptz;
+alter table members add column if not exists discord_user_id text;
+alter table members add column if not exists discord_username text;
+alter table members add column if not exists discord_link_state uuid;
+alter table members add column if not exists discord_link_state_expires_at timestamptz;
 
 create index if not exists idx_members_approval_status on members(approval_status);
 create index if not exists idx_members_email_verify_token on members(email_verify_token);
 
 create index if not exists idx_members_token on members(token);
 create index if not exists idx_members_group_id on members(group_id);
+
+-- Un compte Discord donné ne peut être lié qu'à un seul membre par groupe.
+create unique index if not exists idx_members_group_discord_user
+  on members(group_id, discord_user_id)
+  where discord_user_id is not null;
+
+create index if not exists idx_members_discord_link_state
+  on members(discord_link_state)
+  where discord_link_state is not null;
 
 -- ============================================================
 -- items — registre permanent par membre
