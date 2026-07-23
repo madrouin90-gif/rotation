@@ -100,9 +100,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
       })),
     ];
 
-    entries.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+    // Plus récent en premier : le panneau ne défile pas automatiquement, un nouveau
+    // message doit donc apparaître en haut pour rester visible sans avoir à scroller.
+    entries.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
-    return NextResponse.json({ entries: entries.slice(-limit) });
+    return NextResponse.json({ entries: entries.slice(0, limit) });
   } catch (error) {
     return errorResponse(error);
   }
