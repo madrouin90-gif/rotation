@@ -4,6 +4,7 @@ import "./globals.css";
 import { ToastProvider } from "@/components/ui/Toast";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { ThemePicker } from "@/components/theme/ThemePicker";
+import { ServiceWorkerRegister } from "@/components/push/ServiceWorkerRegister";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -39,6 +40,7 @@ export default function RootLayout({
           <ToastProvider>{children}</ToastProvider>
           <ThemePicker />
         </ThemeProvider>
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
