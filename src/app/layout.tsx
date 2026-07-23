@@ -17,7 +17,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "Rotation",
-  description: "Partage musical entre amis — 5 slots, zéro scroll infini.",
+  description: "Partage musical, en groupe.",
 };
 
 // Pose l'attribut data-theme avant l'hydratation React pour éviter un flash du

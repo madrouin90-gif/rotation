@@ -23,9 +23,7 @@ export default function HomePage() {
       <div className="max-w-md w-full flex flex-col items-center gap-3 animate-fade-in-up">
         <Logo size={72} className="text-foreground" />
         <h1 className="font-display text-6xl tracking-tight">Rotation</h1>
-        <p className="text-muted text-lg">
-          Le partage musical entre amis. Pas de scroll infini — juste 5 morceaux qui comptent, par personne.
-        </p>
+        <p className="text-muted text-lg">Partage musical, en groupe.</p>
 
         <div className="w-full flex flex-col gap-3 mt-8">
           <Link href="/rejoindre" className="w-full">
