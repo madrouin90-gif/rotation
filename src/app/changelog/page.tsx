@@ -8,12 +8,20 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.2",
+    title: "PWA et notifications push",
+    items: [
+      "Rotation est maintenant installable (icône sur l'écran d'accueil mobile/desktop).",
+      "Active les notifications depuis ton profil pour être averti de l'activité de tes groupes.",
+      "L'admin choisit, par groupe, quels événements envoient une notification : nouveau partage, chat, réaction reçue, demande d'adhésion.",
+    ],
+  },
+  {
     version: "2.1.1",
     title: "Corrections d'affichage du mur",
     items: [
       "Le titre du slot #1 (top pick) ne paraît plus plus gros que les autres.",
       "Les nouveaux messages du chat de groupe apparaissent maintenant en haut.",
-      "Les rangs s'alignent enfin correctement entre les colonnes de membres, peu importe la longueur du contenu de chaque carte.",
     ],
   },
   {

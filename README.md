@@ -22,6 +22,7 @@ Partage musical entre amis. Chaque membre d'un groupe dispose de quelques slots 
 - Compte super-admin plateforme (tableau de bord `/admin`, hors du parcours normal) avec journal d'audit
 - Courriel optionnel par membre (vérifié par lien), digest hebdomadaire des nouveautés du groupe
 - Intégration Discord optionnelle : un membre lie son compte (OAuth2), un groupe se relie à un salon, et un bot (déployé séparément, voir `discord-bot/`) ajoute automatiquement à son profil tout lien Spotify qu'il poste dans ce salon
+- PWA installable (icône sur l'écran d'accueil) avec notifications push (Web Push/VAPID) : l'admin choisit par groupe quels événements notifient (partage, chat, réaction, demande d'adhésion), chaque membre active les notifications sur son appareil depuis son profil
 - Sécurité : sessions révocables, mots de passe hachés (scrypt), verrouillage après tentatives de connexion répétées, rate limiting par IP
 - Mises à jour quasi temps réel par polling (avec cache ETag/304 et repli progressif en cas d'erreur réseau)
 
@@ -60,6 +61,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...
 | `CRON_SECRET` | Sécurise `/api/cron/weekly-digest` | L'endpoint refuse toute requête (401) |
 | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `NEXT_PUBLIC_DISCORD_CLIENT_ID` | Lien de compte Discord (OAuth2) | Section Discord des réglages/profil non fonctionnelle |
 | `DISCORD_BOT_SECRET` | Sécurise `/api/discord/share` (appelé par le bot) | L'endpoint refuse toute requête (401) |
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Notifications push (Web Push) | Personne ne peut activer les notifications, tout le reste fonctionne |
 
 `.env.local` est ignoré par git (voir `.gitignore`) — ne le commite jamais.
 
@@ -99,6 +101,16 @@ leurs liens Spotify postés dans ce salon automatiquement ajoutés à leur profi
 4. Dans les réglages d'un groupe (admin), section **Discord**, invite le bot et renseigne l'ID du serveur et du salon à relier.
 5. Chaque membre lie son compte Discord depuis sa page profil.
 
+## 6. Notifications push (optionnelles)
+
+1. Génère une paire de clés VAPID : `npx web-push generate-vapid-keys`.
+2. Renseigne `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (`mailto:toi@exemple.com`) et `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (même valeur que `VAPID_PUBLIC_KEY`) dans les variables d'environnement de l'app.
+3. Dans les réglages d'un groupe (admin), section **Notifications push**, active les types d'événements souhaités.
+4. Chaque membre active les notifications depuis sa page profil (bouton « Activer les notifications » — demande la permission du navigateur).
+5. L'app est aussi installable (icône sur l'écran d'accueil mobile/desktop) via le bouton d'installation natif du navigateur, sans configuration supplémentaire.
+
+**Limite connue** : l'icône utilisée dans le manifest est un SVG (`src/app/icon.svg`) — parfait sur Android/desktop Chrome, mais iOS Safari ignore les icônes SVG de manifest et affiche une icône générique à l'installation. Un PNG dédié réglerait ça, pas fourni pour l'instant.
+
 ## Fonctionnement
 
 - **Authentification par sessions révocables.** Créer ou rejoindre un groupe génère un token secret stocké dans le `localStorage` du navigateur. Le serveur ne stocke jamais ce token en clair : seul son hash SHA-256 est conservé dans la table `sessions`, ce qui permet de révoquer une session précise (ex. changer son mot de passe déconnecte les autres appareils) sans invalider les autres. Le super-admin utilise le même mécanisme via un cookie httpOnly plutôt qu'un header.
@@ -116,8 +128,10 @@ src/app/                  Pages (App Router) et routes API
 src/app/api/admin/         Routes du tableau de bord super-admin
 src/app/api/cron/          Tâches planifiées (digest hebdomadaire)
 src/app/api/discord/        Endpoint interne appelé par le bot Discord
+src/app/manifest.ts         Manifest PWA (App Router)
+public/sw.js                Service worker (push, notificationclick, cache hors-ligne minimal)
 src/components/            Composants React réutilisables
-src/lib/                   Logique serveur (Supabase, auth, sessions, email, rate limit, settings, Spotify...) et utilitaires partagés
+src/lib/                   Logique serveur (Supabase, auth, sessions, email, rate limit, settings, Spotify, notifications push...) et utilitaires partagés
 src/hooks/                 Hooks client (session membre, données de groupe avec polling)
 src/types/                 Types TypeScript partagés
 discord-bot/               Bot Discord — sous-projet Node à part, déployé séparément (Railway)
