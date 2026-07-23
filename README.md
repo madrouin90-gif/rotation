@@ -21,6 +21,7 @@ Partage musical entre amis. Chaque membre d'un groupe dispose de quelques slots 
 - 5 thèmes d'affichage, persistants par appareil
 - Compte super-admin plateforme (tableau de bord `/admin`, hors du parcours normal) avec journal d'audit
 - Courriel optionnel par membre (vérifié par lien), digest hebdomadaire des nouveautés du groupe
+- Intégration Discord optionnelle : un membre lie son compte (OAuth2), un groupe se relie à un salon, et un bot (déployé séparément, voir `discord-bot/`) ajoute automatiquement à son profil tout lien Spotify qu'il poste dans ce salon
 - Sécurité : sessions révocables, mots de passe hachés (scrypt), verrouillage après tentatives de connexion répétées, rate limiting par IP
 - Mises à jour quasi temps réel par polling (avec cache ETag/304 et repli progressif en cas d'erreur réseau)
 
@@ -57,6 +58,8 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...
 | `APP_BASE_URL` | Construire les liens dans les courriels | Retombe sur `http://localhost:3000` |
 | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Rate limiting par IP | Aucune limite appliquée |
 | `CRON_SECRET` | Sécurise `/api/cron/weekly-digest` | L'endpoint refuse toute requête (401) |
+| `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `NEXT_PUBLIC_DISCORD_CLIENT_ID` | Lien de compte Discord (OAuth2) | Section Discord des réglages/profil non fonctionnelle |
+| `DISCORD_BOT_SECRET` | Sécurise `/api/discord/share` (appelé par le bot) | L'endpoint refuse toute requête (401) |
 
 `.env.local` est ignoré par git (voir `.gitignore`) — ne le commite jamais.
 
@@ -85,6 +88,17 @@ npm run test    # tests unitaires (Vitest)
 4. Clique sur **Deploy**. Vercel détecte automatiquement Next.js, ainsi que la tâche planifiée définie dans [`vercel.json`](./vercel.json) (digest hebdomadaire, vendredi 16h UTC).
 5. Une fois déployé, partage l'URL Vercel à tes amis avec le code du groupe pour qu'ils puissent le rejoindre.
 
+## 5. Intégration Discord (optionnelle)
+
+Permet à un groupe d'être relié à un salon Discord : les membres qui lient leur compte voient
+leurs liens Spotify postés dans ce salon automatiquement ajoutés à leur profil Rotation.
+
+1. Crée une application sur le [Discord Developer Portal](https://discord.com/developers/applications), récupère son **Client ID** / **Client Secret**, et ajoute `${APP_BASE_URL}/api/account/discord/callback` comme redirect URI OAuth2 autorisée.
+2. Renseigne `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `NEXT_PUBLIC_DISCORD_CLIENT_ID` (même valeur que le Client ID) et un `DISCORD_BOT_SECRET` (valeur aléatoire longue) dans les variables d'environnement de l'app.
+3. Déploie le bot séparément (processus toujours actif — Vercel ne peut pas maintenir de connexion Discord) : voir [`discord-bot/README.md`](./discord-bot/README.md) pour la configuration complète et le déploiement sur Railway.
+4. Dans les réglages d'un groupe (admin), section **Discord**, invite le bot et renseigne l'ID du serveur et du salon à relier.
+5. Chaque membre lie son compte Discord depuis sa page profil.
+
 ## Fonctionnement
 
 - **Authentification par sessions révocables.** Créer ou rejoindre un groupe génère un token secret stocké dans le `localStorage` du navigateur. Le serveur ne stocke jamais ce token en clair : seul son hash SHA-256 est conservé dans la table `sessions`, ce qui permet de révoquer une session précise (ex. changer son mot de passe déconnecte les autres appareils) sans invalider les autres. Le super-admin utilise le même mécanisme via un cookie httpOnly plutôt qu'un header.
@@ -101,8 +115,10 @@ vercel.json                Configuration des tâches planifiées (cron)
 src/app/                  Pages (App Router) et routes API
 src/app/api/admin/         Routes du tableau de bord super-admin
 src/app/api/cron/          Tâches planifiées (digest hebdomadaire)
+src/app/api/discord/        Endpoint interne appelé par le bot Discord
 src/components/            Composants React réutilisables
 src/lib/                   Logique serveur (Supabase, auth, sessions, email, rate limit, settings, Spotify...) et utilitaires partagés
 src/hooks/                 Hooks client (session membre, données de groupe avec polling)
 src/types/                 Types TypeScript partagés
+discord-bot/               Bot Discord — sous-projet Node à part, déployé séparément (Railway)
 ```

@@ -8,6 +8,15 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.1",
+    title: "Intégration Discord",
+    items: [
+      "Lie ton compte Discord depuis ton profil : tes liens Spotify postés dans le salon Discord relié au groupe sont ajoutés automatiquement à ton profil Rotation.",
+      "L'admin peut relier un groupe à un serveur et un salon Discord depuis les réglages.",
+      "Nouveau logo Rotation, sur la page d'accueil et dans l'onglet du navigateur.",
+    ],
+  },
+  {
     version: "2.0",
     title: "Invitation, chat et filtres",
     items: [
