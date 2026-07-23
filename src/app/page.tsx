@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getLastGroupCode, getSession } from "@/lib/session";
 import { Button } from "@/components/ui/Button";
+import { Logo } from "@/components/ui/Logo";
 
 export default function HomePage() {
   const [lastGroup, setLastGroup] = useState<{ code: string; name: string } | null>(null);
@@ -20,6 +21,7 @@ export default function HomePage() {
   return (
     <main className="flex-1 flex flex-col items-center justify-center px-6 py-16 text-center">
       <div className="max-w-md w-full flex flex-col items-center gap-3 animate-fade-in-up">
+        <Logo size={72} className="text-foreground" />
         <h1 className="font-display text-6xl tracking-tight">Rotation</h1>
         <p className="text-muted text-lg">
           Le partage musical entre amis. Pas de scroll infini — juste 5 morceaux qui comptent, par personne.
