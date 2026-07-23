@@ -138,6 +138,57 @@ create index if not exists idx_share_events_item_id on share_events(item_id);
 create index if not exists idx_share_events_occurred_at on share_events(occurred_at desc);
 
 -- ============================================================
+-- comments — fil de discussion persistant par item (comme les
+-- notes /10, survit aux repartages). `share_id` référence le
+-- partage actif au moment du commentaire, pour tracer d'où il
+-- provient sans perdre le commentaire si ce partage est retiré.
+-- ============================================================
+create table if not exists comments (
+  id uuid primary key default gen_random_uuid(),
+  item_id uuid not null references items(id) on delete cascade,
+  share_id uuid references shares(id) on delete set null,
+  member_id uuid not null references members(id) on delete cascade,
+  body text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_comments_item_id on comments(item_id);
+
+-- ============================================================
+-- favorites — liste personnelle par membre, privée (visible
+-- seulement par son propriétaire).
+-- ============================================================
+create table if not exists favorites (
+  id uuid primary key default gen_random_uuid(),
+  member_id uuid not null references members(id) on delete cascade,
+  item_id uuid not null references items(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  unique (member_id, item_id)
+);
+
+create index if not exists idx_favorites_member_id on favorites(member_id);
+
+-- ============================================================
+-- audit_log — journal des actions des utilisateurs, visible
+-- seulement par le super-admin. `member_pseudo` est un instantané
+-- au moment de l'action : `member_id`/`group_id` passent à null si
+-- le membre ou le groupe est supprimé plus tard, mais le journal
+-- doit rester lisible.
+-- ============================================================
+create table if not exists audit_log (
+  id uuid primary key default gen_random_uuid(),
+  group_id uuid references groups(id) on delete set null,
+  member_id uuid references members(id) on delete set null,
+  member_pseudo text,
+  action text not null,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_audit_log_group_id on audit_log(group_id);
+create index if not exists idx_audit_log_created_at on audit_log(created_at desc);
+
+-- ============================================================
 -- super_admins — compte(s) plateforme, indépendants des groupes,
 -- avec contrôle total sur tous les groupes (tableau de bord /admin).
 -- Bootstrap unique : POST /api/admin/setup ne fonctionne que si
@@ -168,3 +219,6 @@ alter table reactions enable row level security;
 alter table ratings enable row level security;
 alter table share_events enable row level security;
 alter table super_admins enable row level security;
+alter table comments enable row level security;
+alter table favorites enable row level security;
+alter table audit_log enable row level security;

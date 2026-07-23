@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireMember } from "@/lib/auth";
 import { AppError, errorResponse } from "@/lib/errors";
 import { computeRatingAggregate } from "@/lib/ratings";
+import { logAction } from "@/lib/auditLog";
 
 interface RateBody {
   itemId?: string;
@@ -62,6 +63,14 @@ export async function POST(request: Request) {
     }
 
     const aggregate = computeRatingAggregate((allRatings ?? []).map((r) => r.score));
+
+    await logAction({
+      groupId: member.group_id,
+      memberId: member.id,
+      memberPseudo: member.pseudo,
+      action: "rating_given",
+      metadata: { itemId, score },
+    });
 
     return NextResponse.json({
       average: aggregate?.average ?? 0,

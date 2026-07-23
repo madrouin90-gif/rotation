@@ -75,6 +75,14 @@ export function GroupTopBar({
           </Link>
 
           <Link
+            href={`/g/${groupCode}/favoris`}
+            className="w-9 h-9 rounded-full bg-surface-2 hover:bg-surface-2/70 flex items-center justify-center transition cursor-pointer"
+            title="Mes favoris"
+          >
+            ★
+          </Link>
+
+          <Link
             href="/guide"
             className="hidden sm:flex w-9 h-9 rounded-full bg-surface-2 hover:bg-surface-2/70 items-center justify-center transition cursor-pointer"
             title="Guide d'utilisation"

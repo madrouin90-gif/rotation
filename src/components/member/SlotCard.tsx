@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { DraggableAttributes, DraggableSyntheticListeners } from "@dnd-kit/core";
 import { isShareNew } from "@/lib/dates";
 import { NoteEditor } from "@/components/share/NoteEditor";
+import { GenreEditor } from "@/components/share/GenreEditor";
 import type { GroupSettings, ShareWithReactions } from "@/types";
 
 interface SlotCardProps {
@@ -16,6 +17,7 @@ interface SlotCardProps {
   onOpenDetail?: () => void;
   onRemove?: () => void;
   onSaveNote?: (note: string) => Promise<void> | void;
+  onSaveGenres?: (genres: string[]) => Promise<void> | void;
   onReplace?: () => void;
   onAddEmpty?: () => void;
 }
@@ -30,10 +32,12 @@ export function SlotCard({
   onOpenDetail,
   onRemove,
   onSaveNote,
+  onSaveGenres,
   onReplace,
   onAddEmpty,
 }: SlotCardProps) {
   const [editingNote, setEditingNote] = useState(false);
+  const [editingGenres, setEditingGenres] = useState(false);
   const isTopPick = settings.highlight_top_pick && rank === 1;
 
   if (!share) {
@@ -127,6 +131,30 @@ export function SlotCard({
                 {share.note ? `“${share.note}”` : "+ Ajouter une note"}
               </button>
             ) : null}
+
+            {settings.genre_tags.length > 0 && (
+              <div className="mt-1.5">
+                {editingGenres ? (
+                  <GenreEditor
+                    initialGenres={share.item.genres}
+                    availableGenres={settings.genre_tags}
+                    onCancel={() => setEditingGenres(false)}
+                    onSave={async (genres) => {
+                      await onSaveGenres?.(genres);
+                      setEditingGenres(false);
+                    }}
+                  />
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setEditingGenres(true)}
+                    className="text-xs text-muted hover:text-accent transition cursor-pointer text-left w-full truncate"
+                  >
+                    {share.item.genres.length > 0 ? share.item.genres.join(", ") : "+ Ajouter des genres"}
+                  </button>
+                )}
+              </div>
+            )}
 
             <button
               type="button"

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Avatar } from "@/components/ui/Avatar";
+import { Button } from "@/components/ui/Button";
 import { ReactionBar } from "@/components/share/ReactionBar";
 import { RatingWidget } from "@/components/share/RatingWidget";
 import { SpotifyEmbedPlayer } from "@/components/share/SpotifyEmbedPlayer";
@@ -11,21 +12,39 @@ import { formatDateFr } from "@/lib/dates";
 import { useToast } from "@/components/ui/Toast";
 import { spotifyTypeLabelFr } from "@/lib/typeLabels";
 import { spotifyAppUri } from "@/lib/spotifyUri";
-import type { GroupSettings, MemberWithShares, ShareWithReactions } from "@/types";
+import type { Comment, GroupSettings, MemberWithShares, ShareWithReactions } from "@/types";
 
 interface ShareDetailModalProps {
   share: ShareWithReactions;
   member: Pick<MemberWithShares, "id" | "pseudo" | "avatar_emoji" | "avatar_color">;
   settings: GroupSettings;
   token: string;
+  myMemberId: string;
   isMe: boolean;
+  isAdmin: boolean;
   onClose: () => void;
   onChanged: () => void;
 }
 
-export function ShareDetailModal({ share, member, settings, token, isMe, onClose, onChanged }: ShareDetailModalProps) {
+export function ShareDetailModal({
+  share,
+  member,
+  settings,
+  token,
+  myMemberId,
+  isMe,
+  isAdmin,
+  onClose,
+  onChanged,
+}: ShareDetailModalProps) {
   const { showError } = useToast();
   const [pending, setPending] = useState(false);
+  const [favoritePending, setFavoritePending] = useState(false);
+  const [commentBody, setCommentBody] = useState("");
+  const [postingComment, setPostingComment] = useState(false);
+
+  const { item } = share;
+  const comments: Comment[] = item.comments ?? [];
 
   async function handleToggleReaction(emoji: string) {
     setPending(true);
@@ -39,7 +58,41 @@ export function ShareDetailModal({ share, member, settings, token, isMe, onClose
     }
   }
 
-  const { item } = share;
+  async function handleToggleFavorite() {
+    setFavoritePending(true);
+    try {
+      await apiFetch("/api/favorites", { method: "POST", token, body: { itemId: item.id } });
+      onChanged();
+    } catch (e) {
+      showError(e instanceof ApiError ? e.message : "Impossible de mettre à jour tes favoris.");
+    } finally {
+      setFavoritePending(false);
+    }
+  }
+
+  async function handlePostComment() {
+    const body = commentBody.trim();
+    if (!body) return;
+    setPostingComment(true);
+    try {
+      await apiFetch("/api/comments", { method: "POST", token, body: { itemId: item.id, shareId: share.id, body } });
+      setCommentBody("");
+      onChanged();
+    } catch (e) {
+      showError(e instanceof ApiError ? e.message : "Impossible de publier le commentaire.");
+    } finally {
+      setPostingComment(false);
+    }
+  }
+
+  async function handleDeleteComment(commentId: string) {
+    try {
+      await apiFetch(`/api/comments/${commentId}`, { method: "DELETE", token });
+      onChanged();
+    } catch (e) {
+      showError(e instanceof ApiError ? e.message : "Impossible de retirer ce commentaire.");
+    }
+  }
 
   return (
     <Modal onClose={onClose}>
@@ -61,6 +114,16 @@ export function ShareDetailModal({ share, member, settings, token, isMe, onClose
             aria-label="Fermer"
           >
             ✕
+          </button>
+
+          <button
+            onClick={handleToggleFavorite}
+            disabled={favoritePending}
+            className="absolute top-4 left-4 sm:top-6 sm:left-6 w-9 h-9 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center text-white transition cursor-pointer z-10"
+            aria-label={item.isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+            title={item.isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+          >
+            {item.isFavorite ? "★" : "☆"}
           </button>
 
           <div className="flex flex-col sm:flex-row gap-6 items-start">
@@ -130,6 +193,54 @@ export function ShareDetailModal({ share, member, settings, token, isMe, onClose
               )}
             </div>
           )}
+
+          <div className="flex flex-col gap-3">
+            <h3 className="text-sm font-medium text-muted">
+              💬 Commentaires{comments.length > 0 ? ` (${comments.length})` : ""}
+            </h3>
+
+            {comments.length > 0 && (
+              <ul className="flex flex-col gap-3">
+                {comments.map((comment) => (
+                  <li key={comment.id} className="flex gap-3 items-start bg-surface-2 rounded-2xl p-3">
+                    <Avatar emoji={comment.author.avatarEmoji} color={comment.author.avatarColor} size="sm" />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium">{comment.author.pseudo}</p>
+                        <span className="text-xs text-muted shrink-0">{formatDateFr(comment.createdAt)}</span>
+                      </div>
+                      <p className="text-sm text-muted break-words">{comment.body}</p>
+                    </div>
+                    {(comment.author.id === myMemberId || isAdmin) && (
+                      <button
+                        onClick={() => handleDeleteComment(comment.id)}
+                        className="text-muted hover:text-red-400 transition cursor-pointer text-xs shrink-0"
+                        aria-label="Retirer ce commentaire"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="flex flex-col gap-2">
+              <textarea
+                value={commentBody}
+                maxLength={500}
+                onChange={(e) => setCommentBody(e.target.value)}
+                rows={2}
+                placeholder="Écris un commentaire..."
+                className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent transition resize-none"
+              />
+              <div className="flex justify-end">
+                <Button size="sm" onClick={handlePostComment} disabled={postingComment || !commentBody.trim()}>
+                  {postingComment ? "..." : "Publier"}
+                </Button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </Modal>

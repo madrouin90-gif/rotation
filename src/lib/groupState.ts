@@ -3,7 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { AppError } from "@/lib/errors";
 import { mergeSettings } from "@/lib/settings";
 import { computeRatingAggregate } from "@/lib/ratings";
-import type { Group, GroupState, Item, MemberWithShares, ReactionSummary } from "@/types";
+import type { Comment, Group, GroupState, Item, MemberWithShares, ReactionSummary } from "@/types";
 
 export async function getGroupById(groupId: string): Promise<Group> {
   const { data, error } = await supabaseAdmin
@@ -101,6 +101,56 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
     ratingsByItem.set(r.item_id, list);
   }
 
+  interface CommentRow {
+    id: string;
+    item_id: string;
+    share_id: string | null;
+    body: string;
+    created_at: string;
+    member_id: string;
+    members: { pseudo: string; avatar_emoji: string; avatar_color: string };
+  }
+
+  const { data: commentRows, error: commentsError } = await supabaseAdmin
+    .from("comments")
+    .select("id, item_id, share_id, body, created_at, member_id, members(pseudo, avatar_emoji, avatar_color)")
+    .in("item_id", itemIds.length > 0 ? itemIds : ["00000000-0000-0000-0000-000000000000"])
+    .order("created_at", { ascending: true });
+
+  if (commentsError) {
+    throw new AppError("Impossible de charger les commentaires.", 500);
+  }
+
+  const commentsByItem = new Map<string, Comment[]>();
+  for (const c of (commentRows ?? []) as unknown as CommentRow[]) {
+    const list = commentsByItem.get(c.item_id) ?? [];
+    list.push({
+      id: c.id,
+      body: c.body,
+      createdAt: c.created_at,
+      shareId: c.share_id,
+      author: {
+        id: c.member_id,
+        pseudo: c.members.pseudo,
+        avatarEmoji: c.members.avatar_emoji,
+        avatarColor: c.members.avatar_color,
+      },
+    });
+    commentsByItem.set(c.item_id, list);
+  }
+
+  const { data: favoriteRows, error: favoritesError } = await supabaseAdmin
+    .from("favorites")
+    .select("item_id")
+    .eq("member_id", viewerMemberId)
+    .in("item_id", itemIds.length > 0 ? itemIds : ["00000000-0000-0000-0000-000000000000"]);
+
+  if (favoritesError) {
+    throw new AppError("Impossible de charger les favoris.", 500);
+  }
+
+  const favoriteItemIds = new Set((favoriteRows ?? []).map((f) => f.item_id));
+
   // Rang d'apparition des membres basé sur la dernière mise à jour de leur liste
   // (dernier `added_at` parmi leurs partages actifs), le plus récent en premier.
   // Les membres sans partage actif restent en fin de liste, dans l'ordre d'arrivée.
@@ -148,6 +198,8 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
               votesCount: aggregate?.votesCount ?? 0,
               myScore: myRating ? myRating.score : null,
             },
+            comments: commentsByItem.get(s.item_id) ?? [],
+            isFavorite: favoriteItemIds.has(s.item_id),
           },
           reactions: reactionsByShare.get(s.id) ?? [],
         };

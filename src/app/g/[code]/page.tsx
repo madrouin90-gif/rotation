@@ -160,7 +160,9 @@ export default function GroupPage() {
           member={selectedShare.member}
           settings={data.group.settings}
           token={session.token}
+          myMemberId={data.me.memberId}
           isMe={selectedShare.member.id === data.me.memberId}
+          isAdmin={data.me.isAdmin}
           onClose={() => setSelectedShareId(null)}
           onChanged={refresh}
         />

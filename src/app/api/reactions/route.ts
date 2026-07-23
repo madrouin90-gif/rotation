@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireMember } from "@/lib/auth";
 import { getGroupById } from "@/lib/groupState";
 import { AppError, errorResponse } from "@/lib/errors";
+import { logAction } from "@/lib/auditLog";
 
 interface ToggleReactionBody {
   shareId?: string;
@@ -47,6 +48,15 @@ export async function POST(request: Request) {
     if (existing) {
       const { error } = await supabaseAdmin.from("reactions").delete().eq("id", existing.id);
       if (error) throw new AppError("Impossible de retirer la réaction.", 500);
+
+      await logAction({
+        groupId: member.group_id,
+        memberId: member.id,
+        memberPseudo: member.pseudo,
+        action: "reaction_removed",
+        metadata: { shareId, emoji },
+      });
+
       return NextResponse.json({ ok: true, reacted: false });
     }
 
@@ -56,6 +66,14 @@ export async function POST(request: Request) {
 
     const { error } = await supabaseAdmin.from("reactions").insert({ share_id: shareId, member_id: member.id, emoji });
     if (error) throw new AppError("Impossible d'ajouter la réaction.", 500);
+
+    await logAction({
+      groupId: member.group_id,
+      memberId: member.id,
+      memberPseudo: member.pseudo,
+      action: "reaction_added",
+      metadata: { shareId, emoji },
+    });
 
     return NextResponse.json({ ok: true, reacted: true });
   } catch (error) {

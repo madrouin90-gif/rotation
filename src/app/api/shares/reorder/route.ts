@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireMember } from "@/lib/auth";
 import { AppError, errorResponse } from "@/lib/errors";
+import { logAction } from "@/lib/auditLog";
 
 interface ReorderBody {
   order?: string[];
@@ -46,6 +47,13 @@ export async function PATCH(request: Request) {
         .update({ rank: i + 1 })
         .eq("id", order[i]);
     }
+
+    await logAction({
+      groupId: member.group_id,
+      memberId: member.id,
+      memberPseudo: member.pseudo,
+      action: "shares_reordered",
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {

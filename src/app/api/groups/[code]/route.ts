@@ -5,6 +5,7 @@ import { AppError, errorResponse } from "@/lib/errors";
 import { buildGroupState } from "@/lib/groupState";
 import { DEFAULT_SETTINGS, validateSettingsPatch } from "@/lib/settings";
 import { generateGroupCode, normalizeGroupCode } from "@/lib/codes";
+import { logAction } from "@/lib/auditLog";
 import type { GroupSettings } from "@/types";
 
 export async function GET(request: Request, { params }: { params: Promise<{ code: string }> }) {
@@ -41,7 +42,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
   try {
     const { code: rawCode } = await params;
     const code = normalizeGroupCode(rawCode);
-    const { group } = await requireAdminInGroup(request, code);
+    const { member, group } = await requireAdminInGroup(request, code);
     const body = (await request.json()) as PatchBody;
 
     if (body.action === "rename") {
@@ -51,6 +52,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
       }
       const { error } = await supabaseAdmin.from("groups").update({ name }).eq("id", group.id);
       if (error) throw new AppError("Impossible de renommer le groupe.", 500);
+
+      await logAction({
+        groupId: group.id,
+        memberId: member.id,
+        memberPseudo: member.pseudo,
+        action: "group_renamed",
+        metadata: { name },
+      });
+
       return NextResponse.json({ name });
     }
 
@@ -68,6 +78,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
 
       const { error } = await supabaseAdmin.from("groups").update({ code: newCode }).eq("id", group.id);
       if (error) throw new AppError("Impossible de régénérer le code du groupe.", 500);
+
+      await logAction({
+        groupId: group.id,
+        memberId: member.id,
+        memberPseudo: member.pseudo,
+        action: "code_regenerated",
+      });
+
       return NextResponse.json({ code: newCode });
     }
 
@@ -129,6 +147,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
 
       const { error } = await supabaseAdmin.from("groups").update({ settings: merged }).eq("id", group.id);
       if (error) throw new AppError("Impossible de mettre à jour les paramètres du groupe.", 500);
+
+      await logAction({
+        groupId: group.id,
+        memberId: member.id,
+        memberPseudo: member.pseudo,
+        action: "settings_updated",
+        metadata: { resetToDefaults: body.action === "reset_defaults" },
+      });
 
       return NextResponse.json({ dryRun: false, impact, settings: merged });
     }

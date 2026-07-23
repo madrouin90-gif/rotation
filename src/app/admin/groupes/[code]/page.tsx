@@ -6,6 +6,18 @@ import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { apiFetch, ApiError } from "@/lib/apiClient";
+import { formatDateFr } from "@/lib/dates";
+import { formatAuditEntry } from "@/lib/auditLabels";
+
+interface AuditEntry {
+  id: string;
+  action: string;
+  metadata: Record<string, unknown>;
+  memberPseudo: string | null;
+  groupName: string | null;
+  groupCode: string | null;
+  createdAt: string;
+}
 
 interface AdminMember {
   id: string;
@@ -33,6 +45,7 @@ export default function AdminGroupDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [auditEntries, setAuditEntries] = useState<AuditEntry[] | null>(null);
 
   useEffect(() => {
     apiFetch("/api/admin/session")
@@ -54,6 +67,13 @@ export default function AdminGroupDetailPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (authChecked) load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authChecked, code]);
+
+  useEffect(() => {
+    if (!authChecked) return;
+    apiFetch<{ entries: AuditEntry[] }>(`/api/admin/audit-log?groupCode=${code}&limit=50`)
+      .then((res) => setAuditEntries(res.entries))
+      .catch(() => {});
   }, [authChecked, code]);
 
   async function handleToggleActive(memberId: string, nextActive: boolean) {
@@ -175,6 +195,26 @@ export default function AdminGroupDetailPage() {
               </li>
             ))}
           </ul>
+
+          <div className="flex flex-col gap-2">
+            <h2 className="font-display text-lg">Journal d&apos;activité</h2>
+            {auditEntries && auditEntries.length === 0 && (
+              <p className="text-muted text-sm">Aucune activité enregistrée pour ce groupe.</p>
+            )}
+            {auditEntries && auditEntries.length > 0 && (
+              <ul className="flex flex-col gap-1.5">
+                {auditEntries.map((entry) => (
+                  <li
+                    key={entry.id}
+                    className="flex items-center justify-between gap-3 text-sm bg-surface-2 rounded-lg px-3 py-2"
+                  >
+                    <span className="truncate">{formatAuditEntry(entry)}</span>
+                    <span className="text-xs text-muted shrink-0">{formatDateFr(entry.createdAt)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </>
       )}
     </main>

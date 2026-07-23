@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireMember } from "@/lib/auth";
 import { AppError, errorResponse } from "@/lib/errors";
 import { hashPassword } from "@/lib/password";
+import { logAction } from "@/lib/auditLog";
 
 interface SetPasswordBody {
   password?: string;
@@ -26,6 +27,13 @@ export async function POST(request: Request) {
       .eq("id", member.id);
 
     if (error) throw new AppError("Impossible d'enregistrer ton mot de passe.", 500);
+
+    await logAction({
+      groupId: member.group_id,
+      memberId: member.id,
+      memberPseudo: member.pseudo,
+      action: "password_changed",
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {

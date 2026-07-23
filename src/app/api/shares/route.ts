@@ -4,6 +4,7 @@ import { requireMember } from "@/lib/auth";
 import { getGroupById, spotifyTypeLabelFr } from "@/lib/groupState";
 import { AppError, errorResponse } from "@/lib/errors";
 import { parseSpotifyUrl, fetchSpotifyOEmbed } from "@/lib/spotify";
+import { logAction } from "@/lib/auditLog";
 
 interface CreateShareBody {
   spotifyUrl?: string;
@@ -120,6 +121,14 @@ export async function POST(request: Request) {
 
       await supabaseAdmin.from("share_events").insert({ member_id: member.id, item_id: itemId });
 
+      await logAction({
+        groupId: member.group_id,
+        memberId: member.id,
+        memberPseudo: member.pseudo,
+        action: "share_replaced",
+        metadata: { rank: replaceRank, title: oembed.title },
+      });
+
       return NextResponse.json({ ok: true, rank: replaceRank });
     }
 
@@ -151,6 +160,14 @@ export async function POST(request: Request) {
     if (insertError) throw new AppError("Impossible d'ajouter ce partage.", 500);
 
     await supabaseAdmin.from("share_events").insert({ member_id: member.id, item_id: itemId });
+
+    await logAction({
+      groupId: member.group_id,
+      memberId: member.id,
+      memberPseudo: member.pseudo,
+      action: "share_added",
+      metadata: { rank: freeRank, title: oembed.title },
+    });
 
     return NextResponse.json({ ok: true, rank: freeRank });
   } catch (error) {

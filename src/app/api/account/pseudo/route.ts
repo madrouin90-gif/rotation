@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireMember } from "@/lib/auth";
 import { AppError, errorResponse } from "@/lib/errors";
+import { logAction } from "@/lib/auditLog";
 
 interface SetPseudoBody {
   pseudo?: string;
@@ -35,6 +36,13 @@ export async function POST(request: Request) {
 
     const { error } = await supabaseAdmin.from("members").update({ pseudo }).eq("id", member.id);
     if (error) throw new AppError("Impossible de mettre à jour ton pseudo.", 500);
+
+    await logAction({
+      groupId: member.group_id,
+      memberId: member.id,
+      memberPseudo: pseudo,
+      action: "pseudo_changed",
+    });
 
     return NextResponse.json({ ok: true, pseudo });
   } catch (error) {

@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS } from "@/lib/settings";
 import { generateGroupCode } from "@/lib/codes";
 import { isValidAvatarColor, isValidAvatarEmoji } from "@/lib/avatars";
 import { hashPassword } from "@/lib/password";
+import { logAction } from "@/lib/auditLog";
 
 interface CreateGroupBody {
   groupName?: string;
@@ -86,6 +87,14 @@ export async function POST(request: Request) {
     if (memberError || !member) {
       throw new AppError("Impossible de créer ton profil dans le groupe. Réessaie.", 500);
     }
+
+    await logAction({
+      groupId: group.id,
+      memberId: member.id,
+      memberPseudo: pseudo,
+      action: "group_created",
+      metadata: { groupName },
+    });
 
     return NextResponse.json({
       token: member.token,

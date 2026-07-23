@@ -44,6 +44,21 @@ export interface RatingInfo {
   myScore: number | null;
 }
 
+export interface CommentAuthor {
+  id: string;
+  pseudo: string;
+  avatarEmoji: string;
+  avatarColor: string;
+}
+
+export interface Comment {
+  id: string;
+  body: string;
+  createdAt: string;
+  author: CommentAuthor;
+  shareId: string | null;
+}
+
 export interface Item {
   id: string;
   member_id: string;
@@ -56,6 +71,8 @@ export interface Item {
   genres: string[];
   first_added_at: string;
   rating?: RatingInfo;
+  comments?: Comment[];
+  isFavorite?: boolean;
 }
 
 export interface Share {
@@ -115,6 +132,17 @@ export interface PublicGroupSummary {
   memberCount: number;
   maxMembers: number;
   requireApproval: boolean;
+}
+
+export interface FavoriteEntry {
+  item: Item;
+  owner: {
+    memberId: string;
+    pseudo: string;
+    avatarEmoji: string;
+    avatarColor: string;
+  };
+  favoritedAt: string;
 }
 
 export interface ArchiveEntry {

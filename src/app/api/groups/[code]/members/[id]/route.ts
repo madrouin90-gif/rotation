@@ -4,6 +4,7 @@ import { requireAdminInGroup, requireMemberInGroup } from "@/lib/auth";
 import { getGroupById } from "@/lib/groupState";
 import { AppError, errorResponse } from "@/lib/errors";
 import { normalizeGroupCode } from "@/lib/codes";
+import { logAction } from "@/lib/auditLog";
 
 export async function DELETE(
   request: Request,
@@ -30,6 +31,14 @@ export async function DELETE(
 
     const { error } = await supabaseAdmin.from("members").delete().eq("id", memberId);
     if (error) throw new AppError("Impossible de retirer ce membre.", 500);
+
+    await logAction({
+      groupId: member.group_id,
+      memberId: member.id,
+      memberPseudo: member.pseudo,
+      action: "member_removed",
+      metadata: { targetMemberId: memberId },
+    });
 
     return NextResponse.json({ ok: true });
   } catch (error) {
@@ -94,6 +103,14 @@ export async function PATCH(
         .eq("id", memberId);
       if (error) throw new AppError("Impossible de mettre à jour ce membre.", 500);
 
+      await logAction({
+        groupId: member.group_id,
+        memberId: member.id,
+        memberPseudo: member.pseudo,
+        action: "member_promoted",
+        metadata: { targetMemberId: memberId, isAdmin: body.isAdmin },
+      });
+
       return NextResponse.json({ ok: true, isAdmin: body.isAdmin });
     }
 
@@ -114,6 +131,14 @@ export async function PATCH(
         .update({ is_active: body.isActive })
         .eq("id", memberId);
       if (error) throw new AppError("Impossible de mettre à jour ce membre.", 500);
+
+      await logAction({
+        groupId: member.group_id,
+        memberId: member.id,
+        memberPseudo: member.pseudo,
+        action: "member_toggled_active",
+        metadata: { targetMemberId: memberId, isActive: body.isActive },
+      });
 
       return NextResponse.json({ ok: true, isActive: body.isActive });
     }
@@ -143,6 +168,14 @@ export async function PATCH(
       const { error } = await supabaseAdmin.from("members").update({ pseudo }).eq("id", memberId);
       if (error) throw new AppError("Impossible de renommer ce membre.", 500);
 
+      await logAction({
+        groupId: member.group_id,
+        memberId: member.id,
+        memberPseudo: member.pseudo,
+        action: "member_renamed",
+        metadata: { targetMemberId: memberId, pseudo },
+      });
+
       return NextResponse.json({ ok: true, pseudo });
     }
 
@@ -170,6 +203,14 @@ export async function PATCH(
         .eq("id", memberId);
       if (error) throw new AppError("Impossible d'approuver ce membre.", 500);
 
+      await logAction({
+        groupId: member.group_id,
+        memberId: member.id,
+        memberPseudo: member.pseudo,
+        action: "member_approved",
+        metadata: { targetMemberId: memberId, targetPseudo: target.pseudo },
+      });
+
       return NextResponse.json({ ok: true });
     }
 
@@ -180,6 +221,14 @@ export async function PATCH(
 
       const { error } = await supabaseAdmin.from("members").delete().eq("id", memberId);
       if (error) throw new AppError("Impossible de rejeter cette demande.", 500);
+
+      await logAction({
+        groupId: member.group_id,
+        memberId: member.id,
+        memberPseudo: member.pseudo,
+        action: "member_rejected",
+        metadata: { targetMemberId: memberId, targetPseudo: target.pseudo },
+      });
 
       return NextResponse.json({ ok: true });
     }

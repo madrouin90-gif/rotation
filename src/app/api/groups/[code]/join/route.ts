@@ -5,6 +5,7 @@ import { mergeSettings } from "@/lib/settings";
 import { isValidAvatarColor, isValidAvatarEmoji } from "@/lib/avatars";
 import { normalizeGroupCode } from "@/lib/codes";
 import { hashPassword } from "@/lib/password";
+import { logAction } from "@/lib/auditLog";
 
 interface JoinBody {
   pseudo?: string;
@@ -86,6 +87,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
     if (memberError || !member) {
       throw new AppError("Impossible de rejoindre le groupe. Réessaie.", 500);
     }
+
+    await logAction({
+      groupId: group.id,
+      memberId: member.id,
+      memberPseudo: pseudo,
+      action: approvalStatus === "pending" ? "join_requested" : "member_joined",
+    });
 
     return NextResponse.json({
       token: member.token,

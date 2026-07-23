@@ -102,6 +102,15 @@ export default function MemberPage() {
     }
   }
 
+  async function handleSaveGenres(shareId: string, genres: string[]) {
+    try {
+      await apiFetch(`/api/shares/${shareId}`, { method: "PATCH", token: session!.token, body: { genres } });
+      refresh();
+    } catch (e) {
+      showError(e instanceof ApiError ? e.message : "Impossible d'enregistrer les genres.");
+    }
+  }
+
   return (
     <div className="flex-1 flex flex-col">
       <header className="sticky top-0 z-30 backdrop-blur-md bg-background/80 border-b border-border">
@@ -141,6 +150,7 @@ export default function MemberPage() {
           onOpenDetail={setSelectedShareId}
           onRemove={handleRemove}
           onSaveNote={handleSaveNote}
+          onSaveGenres={handleSaveGenres}
           onReplace={(rank) => {
             setReplaceRank(rank);
             setAddShareOpen(true);
@@ -175,7 +185,9 @@ export default function MemberPage() {
           member={member}
           settings={data.group.settings}
           token={session.token}
+          myMemberId={data.me.memberId}
           isMe={Boolean(isMe)}
+          isAdmin={data.me.isAdmin}
           onClose={() => setSelectedShareId(null)}
           onChanged={refresh}
         />

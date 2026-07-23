@@ -16,6 +16,7 @@ interface SlotGridProps {
   onOpenDetail: (shareId: string) => void;
   onRemove: (shareId: string) => void;
   onSaveNote: (shareId: string, note: string) => Promise<void>;
+  onSaveGenres: (shareId: string, genres: string[]) => Promise<void>;
   onReplace: (rank: number) => void;
   onAddEmpty: () => void;
 }
@@ -27,6 +28,7 @@ function SortableSlotItem({
   onOpenDetail,
   onRemove,
   onSaveNote,
+  onSaveGenres,
   onReplace,
 }: {
   share: ShareWithReactions;
@@ -35,6 +37,7 @@ function SortableSlotItem({
   onOpenDetail: () => void;
   onRemove: () => void;
   onSaveNote: (note: string) => Promise<void>;
+  onSaveGenres: (genres: string[]) => Promise<void>;
   onReplace: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: share.id });
@@ -57,6 +60,7 @@ function SortableSlotItem({
         onOpenDetail={onOpenDetail}
         onRemove={onRemove}
         onSaveNote={onSaveNote}
+        onSaveGenres={onSaveGenres}
         onReplace={onReplace}
       />
     </div>
@@ -72,6 +76,7 @@ export function SlotGrid({
   onOpenDetail,
   onRemove,
   onSaveNote,
+  onSaveGenres,
   onReplace,
   onAddEmpty,
 }: SlotGridProps) {
@@ -114,6 +119,7 @@ export function SlotGrid({
         onOpenDetail={() => onOpenDetail(id)}
         onRemove={() => onRemove(id)}
         onSaveNote={(note) => onSaveNote(id, note)}
+        onSaveGenres={(genres) => onSaveGenres(id, genres)}
         onReplace={() => onReplace(index + 1)}
       />
     );
