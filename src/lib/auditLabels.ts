@@ -64,6 +64,12 @@ export function formatAuditEntry(entry: AuditEntryLike): string {
       return `${who} a renommé le groupe en « ${m.name ?? ""} »`;
     case "code_regenerated":
       return `${who} a régénéré le code du groupe`;
+    case "discord_linked":
+      return `${who} a lié son compte Discord (${m.discordUsername ?? ""})`;
+    case "discord_unlinked":
+      return `${who} a délié son compte Discord`;
+    case "discord_config_updated":
+      return `${who} a modifié la configuration Discord du groupe`;
     default:
       return `${who} — ${entry.action}`;
   }

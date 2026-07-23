@@ -8,7 +8,7 @@ import type { Comment, Group, GroupState, Item, MemberWithShares, ReactionSummar
 export async function getGroupById(groupId: string): Promise<Group> {
   const { data, error } = await supabaseAdmin
     .from("groups")
-    .select("id, name, code, settings, created_at")
+    .select("id, name, code, settings, discord_guild_id, discord_channel_id, created_at")
     .eq("id", groupId)
     .maybeSingle();
 
@@ -251,7 +251,7 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
   // liste `members` envoyée à tout le monde, seul le viewer a besoin de connaître son propre état.
   const { data: viewerRow } = await supabaseAdmin
     .from("members")
-    .select("password_hash, email, email_verified_at, last_seen_at")
+    .select("password_hash, email, email_verified_at, last_seen_at, discord_username")
     .eq("id", viewerMemberId)
     .maybeSingle();
 
@@ -294,7 +294,14 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
   }
 
   return {
-    group: { id: group.id, name: group.name, code: group.code, settings: group.settings },
+    group: {
+      id: group.id,
+      name: group.name,
+      code: group.code,
+      settings: group.settings,
+      discord_guild_id: group.discord_guild_id,
+      discord_channel_id: group.discord_channel_id,
+    },
     members,
     me: {
       memberId: viewerMemberId,
@@ -303,6 +310,7 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
       hasPassword: Boolean(viewerRow?.password_hash),
       email: viewerRow?.email ?? null,
       emailVerified: Boolean(viewerRow?.email_verified_at),
+      discordUsername: viewerRow?.discord_username ?? null,
       pendingRequestsCount,
       unseenCount,
       lastSeenAt,

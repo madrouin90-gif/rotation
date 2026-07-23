@@ -22,6 +22,8 @@ export interface Group {
   name: string;
   code: string;
   settings: GroupSettings;
+  discord_guild_id: string | null;
+  discord_channel_id: string | null;
   created_at: string;
 }
 
@@ -118,7 +120,7 @@ export interface MemberWithShares extends Member {
 }
 
 export interface GroupState {
-  group: Pick<Group, "id" | "name" | "code" | "settings">;
+  group: Pick<Group, "id" | "name" | "code" | "settings" | "discord_guild_id" | "discord_channel_id">;
   members: MemberWithShares[];
   me: {
     memberId: string;
@@ -127,6 +129,7 @@ export interface GroupState {
     hasPassword: boolean;
     email: string | null;
     emailVerified: boolean;
+    discordUsername: string | null;
     pendingRequestsCount: number;
     unseenCount: number;
     lastSeenAt: string | null;

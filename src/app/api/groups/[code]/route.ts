@@ -51,7 +51,14 @@ interface ResetDefaultsBody {
   action: "reset_defaults";
   dryRun?: boolean;
 }
-type PatchBody = RenameBody | RegenerateCodeBody | UpdateSettingsBody | ResetDefaultsBody;
+interface UpdateDiscordBody {
+  action: "update_discord";
+  discordGuildId: string | null;
+  discordChannelId: string | null;
+}
+type PatchBody = RenameBody | RegenerateCodeBody | UpdateSettingsBody | ResetDefaultsBody | UpdateDiscordBody;
+
+const DISCORD_SNOWFLAKE_RE = /^\d{17,20}$/;
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ code: string }> }) {
   try {
@@ -178,6 +185,43 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
       });
 
       return NextResponse.json({ dryRun: false, impact: finalImpact, settings: merged });
+    }
+
+    if (body.action === "update_discord") {
+      const guildId = body.discordGuildId?.trim() || null;
+      const channelId = body.discordChannelId?.trim() || null;
+
+      if ((guildId && !channelId) || (!guildId && channelId)) {
+        throw new AppError("Renseigne à la fois l'ID du serveur et celui du salon, ou laisse les deux vides.");
+      }
+      if (guildId && !DISCORD_SNOWFLAKE_RE.test(guildId)) {
+        throw new AppError("L'ID du serveur Discord est invalide.");
+      }
+      if (channelId && !DISCORD_SNOWFLAKE_RE.test(channelId)) {
+        throw new AppError("L'ID du salon Discord est invalide.");
+      }
+
+      const { error } = await supabaseAdmin
+        .from("groups")
+        .update({ discord_guild_id: guildId, discord_channel_id: channelId })
+        .eq("id", group.id);
+
+      if (error) {
+        if (error.code === "23505") {
+          throw new AppError("Ce salon Discord est déjà lié à un autre groupe.");
+        }
+        throw new AppError("Impossible de mettre à jour la configuration Discord.", 500);
+      }
+
+      await logAction({
+        groupId: group.id,
+        memberId: member.id,
+        memberPseudo: member.pseudo,
+        action: "discord_config_updated",
+        metadata: { linked: Boolean(guildId) },
+      });
+
+      return NextResponse.json({ discordGuildId: guildId, discordChannelId: channelId });
     }
 
     throw new AppError("Action inconnue.");

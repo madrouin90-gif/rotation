@@ -74,7 +74,7 @@ export async function requireMemberInGroup(
 
   const { data: groupRow, error } = await supabaseAdmin
     .from("groups")
-    .select("id, name, code, settings, created_at")
+    .select("id, name, code, settings, discord_guild_id, discord_channel_id, created_at")
     .eq("code", groupCode)
     .maybeSingle();
 
