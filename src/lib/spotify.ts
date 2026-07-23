@@ -35,7 +35,10 @@ export interface SpotifyOEmbed {
  * Titre oEmbed pour un artiste/album : souvent "Titre" seul (pas d'auteur distinct pour un artiste),
  * pour un titre de piste/album Spotify formate parfois "Titre - Artiste" via le champ title.
  */
-function splitTitleArtist(rawTitle: string, type: SpotifyItemType): { title: string; artistName: string | null } {
+export function splitTitleArtist(
+  rawTitle: string,
+  type: SpotifyItemType
+): { title: string; artistName: string | null } {
   if (type === "artist") {
     return { title: rawTitle, artistName: null };
   }

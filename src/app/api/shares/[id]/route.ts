@@ -86,22 +86,15 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   try {
     const { id } = await params;
     const member = await requireMember(request);
-    const owned = await loadOwnedShare(id, member.id);
+    await loadOwnedShare(id, member.id);
 
-    const { error } = await supabaseAdmin.from("shares").delete().eq("id", id);
+    const { data: deleted, error } = await supabaseAdmin.rpc("delete_share_compact", {
+      p_share_id: id,
+      p_member_id: member.id,
+    });
+
     if (error) throw new AppError("Impossible de retirer ce partage.", 500);
-
-    // Comble le trou laissé par le slot supprimé pour garder des rangs contigus 1..N.
-    const { data: laterShares } = await supabaseAdmin
-      .from("shares")
-      .select("id, rank")
-      .eq("member_id", member.id)
-      .gt("rank", owned.rank)
-      .order("rank", { ascending: true });
-
-    for (const later of laterShares ?? []) {
-      await supabaseAdmin.from("shares").update({ rank: later.rank - 1 }).eq("id", later.id);
-    }
+    if (!deleted) throw new AppError("Ce partage n'existe pas ou plus.", 404);
 
     await logAction({
       groupId: member.group_id,

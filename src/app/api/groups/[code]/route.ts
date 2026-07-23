@@ -135,14 +135,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
         return NextResponse.json({ dryRun: true, impact, settings: merged });
       }
 
-      if (reducingSlots && impact.length > 0) {
-        for (const entry of impact) {
-          await supabaseAdmin
-            .from("shares")
-            .delete()
-            .eq("member_id", entry.memberId)
-            .gt("rank", merged.slots_per_member);
+      let finalImpact = impact;
+      if (reducingSlots) {
+        const { data: reduced, error: reduceError } = await supabaseAdmin.rpc("apply_slot_reduction", {
+          p_group_id: group.id,
+          p_new_slots: merged.slots_per_member,
+        });
+        if (reduceError) {
+          throw new AppError("Impossible d'appliquer la réduction du nombre de slots.", 500);
         }
+        finalImpact = (reduced ?? []).map((r: { member_id: string; pseudo: string; shares_archived: number }) => ({
+          memberId: r.member_id,
+          pseudo: r.pseudo,
+          sharesArchived: r.shares_archived,
+        }));
       }
 
       const { error } = await supabaseAdmin.from("groups").update({ settings: merged }).eq("id", group.id);
@@ -156,7 +162,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ co
         metadata: { resetToDefaults: body.action === "reset_defaults" },
       });
 
-      return NextResponse.json({ dryRun: false, impact, settings: merged });
+      return NextResponse.json({ dryRun: false, impact: finalImpact, settings: merged });
     }
 
     throw new AppError("Action inconnue.");

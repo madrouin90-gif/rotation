@@ -18,6 +18,13 @@ interface CreateGroupBody {
   requireApproval?: boolean;
 }
 
+interface CreateGroupWithOwnerResult {
+  group_id: string;
+  member_id: string;
+}
+
+const UNIQUE_VIOLATION = "23505";
+
 export async function POST(request: Request) {
   try {
     const body = (await request.json()) as CreateGroupBody;
@@ -40,70 +47,62 @@ export async function POST(request: Request) {
       throw new AppError("Ton mot de passe doit contenir entre 8 et 72 caractères.");
     }
 
-    let code = "";
-    for (let attempt = 0; attempt < 6; attempt++) {
-      const candidate = generateGroupCode();
-      const { data: existing } = await supabaseAdmin.from("groups").select("id").eq("code", candidate).maybeSingle();
-      if (!existing) {
-        code = candidate;
-        break;
-      }
-    }
-    if (!code) {
-      throw new AppError("Impossible de générer un code de groupe unique, réessaie.", 500);
-    }
-
     const settings = {
       ...DEFAULT_SETTINGS,
       is_public: Boolean(body.isPublic),
       require_approval: Boolean(body.requireApproval),
     };
 
-    const { data: group, error: groupError } = await supabaseAdmin
-      .from("groups")
-      .insert({ name: groupName, code, settings })
-      .select("id, name, code")
-      .single();
-
-    if (groupError || !group) {
-      throw new AppError("Impossible de créer le groupe. Réessaie.", 500);
-    }
-
     const passwordHash = await hashPassword(password);
 
-    const { data: member, error: memberError } = await supabaseAdmin
-      .from("members")
-      .insert({
-        group_id: group.id,
-        pseudo,
-        avatar_emoji: avatarEmoji,
-        avatar_color: avatarColor,
-        is_admin: true,
-        is_owner: true,
-        password_hash: passwordHash,
-      })
-      .select("id")
-      .single();
+    let created: CreateGroupWithOwnerResult | null = null;
+    let code = "";
 
-    if (memberError || !member) {
-      throw new AppError("Impossible de créer ton profil dans le groupe. Réessaie.", 500);
+    for (let attempt = 0; attempt < 6; attempt++) {
+      const candidate = generateGroupCode();
+      const { data, error } = await supabaseAdmin
+        .rpc("create_group_with_owner", {
+          p_name: groupName,
+          p_code: candidate,
+          p_settings: settings,
+          p_pseudo: pseudo,
+          p_avatar_emoji: avatarEmoji,
+          p_avatar_color: avatarColor,
+          p_password_hash: passwordHash,
+        })
+        .single<CreateGroupWithOwnerResult>();
+
+      if (!error && data) {
+        created = data;
+        code = candidate;
+        break;
+      }
+
+      if (error && error.code !== UNIQUE_VIOLATION) {
+        throw new AppError("Impossible de créer le groupe. Réessaie.", 500);
+      }
+      // Conflit sur le code : on boucle et réessaie avec un nouveau candidat.
+    }
+
+    if (!created) {
+      throw new AppError("Impossible de générer un code de groupe unique, réessaie.", 500);
     }
 
     await logAction({
-      groupId: group.id,
-      memberId: member.id,
+      groupId: created.group_id,
+      memberId: created.member_id,
       memberPseudo: pseudo,
       action: "group_created",
       metadata: { groupName },
     });
 
-    const token = await createMemberSession(member.id);
+    const token = await createMemberSession(created.member_id);
 
     return NextResponse.json({
       token,
-      memberId: member.id,
-      groupCode: group.code,
-      groupName: group.name,
+      memberId: created.member_id,
+      groupCode: code,
+      groupName,
     });
   } catch (error) {
     return errorResponse(error);
