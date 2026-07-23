@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireMemberInGroup } from "@/lib/auth";
 import { AppError, errorResponse } from "@/lib/errors";
 import { normalizeGroupCode } from "@/lib/codes";
 import { logAction } from "@/lib/auditLog";
+import { notifyGroupEvent } from "@/lib/notifications";
 import type { ChatEntry, SpotifyItemType } from "@/types";
 
 const DEFAULT_LIMIT = 100;
@@ -144,6 +145,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
       action: "group_message_added",
       metadata: { messageId: created.id },
     });
+
+    after(() =>
+      notifyGroupEvent({
+        group,
+        eventType: "chat_activity",
+        actorMemberId: member.id,
+        title: `${member.pseudo} a écrit dans le chat`,
+        body: text,
+        url: `/g/${group.code}`,
+      })
+    );
 
     const entry: ChatEntry = {
       id: created.id,

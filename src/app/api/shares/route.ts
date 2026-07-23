@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { requireMember } from "@/lib/auth";
 import { getGroupById } from "@/lib/groupState";
 import { errorResponse } from "@/lib/errors";
 import { logAction } from "@/lib/auditLog";
 import { placeShareForMember } from "@/lib/shareActions";
+import { notifyGroupEvent } from "@/lib/notifications";
 
 interface CreateShareBody {
   spotifyUrl?: string;
@@ -44,6 +45,17 @@ export async function POST(request: Request) {
       action: replaceRank !== undefined ? "share_replaced" : "share_added",
       metadata: { rank: outcome.rank, title: outcome.title },
     });
+
+    after(() =>
+      notifyGroupEvent({
+        group,
+        eventType: "share_activity",
+        actorMemberId: member.id,
+        title: replaceRank !== undefined ? `${member.pseudo} a remplacé un partage` : `${member.pseudo} a partagé`,
+        body: outcome.title,
+        url: `/g/${group.code}`,
+      })
+    );
 
     return NextResponse.json({ ok: true, rank: outcome.rank });
   } catch (error) {

@@ -1,9 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireMember } from "@/lib/auth";
 import { getGroupById } from "@/lib/groupState";
 import { AppError, errorResponse } from "@/lib/errors";
 import { logAction } from "@/lib/auditLog";
+import { notifyGroupEvent } from "@/lib/notifications";
 
 interface ToggleReactionBody {
   shareId?: string;
@@ -74,6 +75,18 @@ export async function POST(request: Request) {
       action: "reaction_added",
       metadata: { shareId, emoji },
     });
+
+    after(() =>
+      notifyGroupEvent({
+        group,
+        eventType: "reaction_added",
+        actorMemberId: member.id,
+        onlyMemberIds: [share.member_id],
+        title: `${member.pseudo} a réagi ${emoji}`,
+        body: "à l'un de tes partages",
+        url: `/g/${group.code}`,
+      })
+    );
 
     return NextResponse.json({ ok: true, reacted: true });
   } catch (error) {

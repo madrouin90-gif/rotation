@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireMember } from "@/lib/auth";
+import { getGroupById } from "@/lib/groupState";
 import { AppError, errorResponse } from "@/lib/errors";
 import { logAction } from "@/lib/auditLog";
+import { notifyGroupEvent } from "@/lib/notifications";
 
 const MAX_BODY_LENGTH = 500;
 
@@ -66,6 +68,18 @@ export async function POST(request: Request) {
       memberPseudo: member.pseudo,
       action: "comment_added",
       metadata: { itemId, commentId: created.id },
+    });
+
+    after(async () => {
+      const group = await getGroupById(member.group_id);
+      await notifyGroupEvent({
+        group,
+        eventType: "chat_activity",
+        actorMemberId: member.id,
+        title: `${member.pseudo} a commenté`,
+        body: commentBody,
+        url: `/g/${group.code}`,
+      });
     });
 
     return NextResponse.json({

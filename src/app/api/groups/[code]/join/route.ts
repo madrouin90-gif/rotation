@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { AppError, errorResponse } from "@/lib/errors";
 import { mergeSettings } from "@/lib/settings";
@@ -8,6 +8,7 @@ import { hashPassword } from "@/lib/password";
 import { logAction } from "@/lib/auditLog";
 import { createMemberSession } from "@/lib/sessions";
 import { enforceRateLimit } from "@/lib/rateLimit";
+import { notifyGroupEvent } from "@/lib/notifications";
 
 interface JoinBody {
   pseudo?: string;
@@ -98,6 +99,29 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
       memberPseudo: pseudo,
       action: approvalStatus === "pending" ? "join_requested" : "member_joined",
     });
+
+    if (approvalStatus === "pending") {
+      after(async () => {
+        const { data: admins } = await supabaseAdmin
+          .from("members")
+          .select("id")
+          .eq("group_id", group.id)
+          .eq("is_admin", true)
+          .eq("is_active", true)
+          .eq("approval_status", "approved");
+
+        await notifyGroupEvent({
+          group: { id: group.id, settings },
+          eventType: "join_requested",
+          actorMemberId: member.id,
+          onlyMemberIds: (admins ?? []).map((a) => a.id),
+          excludeActor: false,
+          title: "Nouvelle demande d'adhésion",
+          body: `${pseudo} veut rejoindre ${group.name}`,
+          url: `/g/${group.code}/reglages`,
+        });
+      });
+    }
 
     const token = await createMemberSession(member.id);
 

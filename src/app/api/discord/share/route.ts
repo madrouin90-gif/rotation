@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireDiscordBot } from "@/lib/discordBotAuth";
 import { getGroupById } from "@/lib/groupState";
@@ -6,6 +6,7 @@ import { AppError, errorResponse } from "@/lib/errors";
 import { logAction } from "@/lib/auditLog";
 import { enforceRateLimit } from "@/lib/rateLimit";
 import { placeShareForMember } from "@/lib/shareActions";
+import { notifyGroupEvent } from "@/lib/notifications";
 
 interface DiscordShareBody {
   guildId?: string;
@@ -72,6 +73,17 @@ export async function POST(request: Request) {
       action: "share_added",
       metadata: { rank: outcome.rank, title: outcome.title, via: "discord" },
     });
+
+    after(() =>
+      notifyGroupEvent({
+        group,
+        eventType: "share_activity",
+        actorMemberId: memberRow.id,
+        title: `${memberRow.pseudo} a partagé`,
+        body: outcome.title,
+        url: `/g/${group.code}`,
+      })
+    );
 
     return NextResponse.json({ status: "ok", rank: outcome.rank, title: outcome.title });
   } catch (error) {
