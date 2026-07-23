@@ -8,6 +8,13 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.2.1",
+    title: "Icône d'installation dédiée pour iPhone/iPad",
+    items: [
+      "L'ajout à l'écran d'accueil depuis Safari (iOS/iPadOS) utilise maintenant une vraie icône Rotation plutôt qu'une icône générique.",
+    ],
+  },
+  {
     version: "2.2",
     title: "PWA et notifications push",
     items: [

@@ -107,9 +107,16 @@ leurs liens Spotify postés dans ce salon automatiquement ajoutés à leur profi
 2. Renseigne `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (`mailto:toi@exemple.com`) et `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (même valeur que `VAPID_PUBLIC_KEY`) dans les variables d'environnement de l'app.
 3. Dans les réglages d'un groupe (admin), section **Notifications push**, active les types d'événements souhaités.
 4. Chaque membre active les notifications depuis sa page profil (bouton « Activer les notifications » — demande la permission du navigateur).
-5. L'app est aussi installable (icône sur l'écran d'accueil mobile/desktop) via le bouton d'installation natif du navigateur, sans configuration supplémentaire.
+5. L'app est aussi installable (icône sur l'écran d'accueil mobile/desktop) : bouton d'installation natif sur Android/desktop Chrome, ou « Partager → Sur l'écran d'accueil » depuis Safari sur iOS/iPadOS (`src/app/apple-icon.png`, généré à partir du logo).
 
-**Limite connue** : l'icône utilisée dans le manifest est un SVG (`src/app/icon.svg`) — parfait sur Android/desktop Chrome, mais iOS Safari ignore les icônes SVG de manifest et affiche une icône générique à l'installation. Un PNG dédié réglerait ça, pas fourni pour l'instant.
+### Notifications sur iPhone/iPad (iOS)
+
+iOS n'autorise le Web Push **que pour les apps installées sur l'écran d'accueil** (restriction d'Apple, iOS 16.4+ minimum) — impossible d'activer les notifications depuis un onglet Safari classique. Étapes :
+
+1. Ouvre le site dans **Safari** (pas Chrome — sur iOS, tous les navigateurs utilisent le moteur Safari, mais l'installation doit passer par lui).
+2. Bouton **Partager** → **Sur l'écran d'accueil**.
+3. Ouvre l'app depuis l'icône ajoutée à l'écran d'accueil (pas depuis un onglet Safari).
+4. Va dans ton profil → « Activer les notifications » → accepte la permission.
 
 ## Fonctionnement
 
