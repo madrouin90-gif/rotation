@@ -6,6 +6,7 @@ import { isValidAvatarColor, isValidAvatarEmoji } from "@/lib/avatars";
 import { normalizeGroupCode } from "@/lib/codes";
 import { hashPassword } from "@/lib/password";
 import { logAction } from "@/lib/auditLog";
+import { createMemberSession } from "@/lib/sessions";
 
 interface JoinBody {
   pseudo?: string;
@@ -30,8 +31,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
     if (!isValidAvatarEmoji(avatarEmoji) || !isValidAvatarColor(avatarColor)) {
       throw new AppError("Choisis un avatar dans la palette proposée.");
     }
-    if (password.length < 4 || password.length > 72) {
-      throw new AppError("Ton mot de passe doit contenir entre 4 et 72 caractères.");
+    if (password.length < 8 || password.length > 72) {
+      throw new AppError("Ton mot de passe doit contenir entre 8 et 72 caractères.");
     }
 
     const { data: group, error: groupError } = await supabaseAdmin
@@ -81,7 +82,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
         password_hash: passwordHash,
         approval_status: approvalStatus,
       })
-      .select("id, token")
+      .select("id")
       .single();
 
     if (memberError || !member) {
@@ -95,8 +96,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
       action: approvalStatus === "pending" ? "join_requested" : "member_joined",
     });
 
+    const token = await createMemberSession(member.id);
+
     return NextResponse.json({
-      token: member.token,
+      token,
       memberId: member.id,
       groupCode: group.code,
       groupName: group.name,

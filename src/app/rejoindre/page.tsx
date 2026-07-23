@@ -211,7 +211,7 @@ function RejoindreForm() {
                 onChange={(e) => setPasswordConfirm(e.target.value)}
               />
               <p className="text-xs text-muted">
-                Te permettra de te reconnecter depuis un autre appareil (4 caractères minimum).
+                Te permettra de te reconnecter depuis un autre appareil (8 caractères minimum).
               </p>
             </div>
             {error && <p className="text-sm text-red-400">{error}</p>}
@@ -221,7 +221,7 @@ function RejoindreForm() {
               </Button>
               <Button
                 className="flex-1"
-                disabled={!pseudo.trim() || password.length < 4 || !passwordsMatch || loading}
+                disabled={!pseudo.trim() || password.length < 8 || !passwordsMatch || loading}
                 onClick={handleJoin}
               >
                 {loading ? "Connexion..." : "Rejoindre"}

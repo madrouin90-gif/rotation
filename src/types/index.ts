@@ -114,6 +114,8 @@ export interface GroupState {
     isAdmin: boolean;
     isOwner: boolean;
     hasPassword: boolean;
+    email: string | null;
+    emailVerified: boolean;
     pendingRequestsCount: number;
   };
 }

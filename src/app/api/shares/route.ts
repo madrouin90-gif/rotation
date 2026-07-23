@@ -50,6 +50,50 @@ export async function POST(request: Request) {
       throw new AppError(`Ta note dépasse la limite de ${settings.note_max_length} caractères.`);
     }
 
+    // Vérification des slots AVANT tout appel réseau externe (oEmbed) : un remplacement
+    // invalide ou des slots pleins ne doivent pas déclencher une requête à Spotify pour rien.
+    const { data: currentShares, error: sharesError } = await supabaseAdmin
+      .from("shares")
+      .select("id, rank")
+      .eq("member_id", member.id);
+
+    if (sharesError) {
+      throw new AppError("Impossible de vérifier tes slots actuels.", 500);
+    }
+
+    const usedRanks = new Set((currentShares ?? []).map((s) => s.rank));
+
+    let replaceTarget: { id: string; rank: number } | null = null;
+    let freeRank: number | null = null;
+
+    if (replaceRank !== undefined) {
+      if (!Number.isInteger(replaceRank) || replaceRank < 1 || replaceRank > settings.slots_per_member) {
+        throw new AppError("Le slot à remplacer est invalide.");
+      }
+      const target = (currentShares ?? []).find((s) => s.rank === replaceRank);
+      if (!target) {
+        throw new AppError("Ce slot n'existe pas ou est déjà libre.");
+      }
+      replaceTarget = target;
+    } else {
+      for (let r = 1; r <= settings.slots_per_member; r++) {
+        if (!usedRanks.has(r)) {
+          freeRank = r;
+          break;
+        }
+      }
+
+      if (freeRank === null) {
+        return NextResponse.json(
+          {
+            error: "Tes slots sont tous pleins. Choisis un partage à remplacer.",
+            slotsFull: true,
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     const oembed = await fetchSpotifyOEmbed(parsed.canonicalUrl, parsed.type);
 
     // Retrouve l'item existant du membre pour préserver first_added_at, ou en crée un nouveau.
@@ -94,60 +138,27 @@ export async function POST(request: Request) {
       itemId = newItem.id;
     }
 
-    const { data: currentShares, error: sharesError } = await supabaseAdmin
-      .from("shares")
-      .select("id, rank")
-      .eq("member_id", member.id);
-
-    if (sharesError) {
-      throw new AppError("Impossible de vérifier tes slots actuels.", 500);
-    }
-
-    const usedRanks = new Set((currentShares ?? []).map((s) => s.rank));
-
-    if (replaceRank !== undefined) {
-      if (!Number.isInteger(replaceRank) || replaceRank < 1 || replaceRank > settings.slots_per_member) {
-        throw new AppError("Le slot à remplacer est invalide.");
-      }
-      const target = (currentShares ?? []).find((s) => s.rank === replaceRank);
-      if (!target) {
-        throw new AppError("Ce slot n'existe pas ou est déjà libre.");
-      }
+    if (replaceTarget) {
       const { error } = await supabaseAdmin
         .from("shares")
         .update({ item_id: itemId, note: note || null, added_at: new Date().toISOString() })
-        .eq("id", target.id);
+        .eq("id", replaceTarget.id);
       if (error) throw new AppError("Impossible de remplacer ce partage.", 500);
 
-      await supabaseAdmin.from("share_events").insert({ member_id: member.id, item_id: itemId });
+      const { error: eventError } = await supabaseAdmin
+        .from("share_events")
+        .insert({ member_id: member.id, item_id: itemId });
+      if (eventError) console.error("share_events insert failed", eventError);
 
       await logAction({
         groupId: member.group_id,
         memberId: member.id,
         memberPseudo: member.pseudo,
         action: "share_replaced",
-        metadata: { rank: replaceRank, title: oembed.title },
+        metadata: { rank: replaceTarget.rank, title: oembed.title },
       });
 
-      return NextResponse.json({ ok: true, rank: replaceRank });
-    }
-
-    let freeRank: number | null = null;
-    for (let r = 1; r <= settings.slots_per_member; r++) {
-      if (!usedRanks.has(r)) {
-        freeRank = r;
-        break;
-      }
-    }
-
-    if (freeRank === null) {
-      return NextResponse.json(
-        {
-          error: "Tes slots sont tous pleins. Choisis un partage à remplacer.",
-          slotsFull: true,
-        },
-        { status: 409 }
-      );
+      return NextResponse.json({ ok: true, rank: replaceTarget.rank });
     }
 
     const { error: insertError } = await supabaseAdmin.from("shares").insert({
@@ -159,7 +170,10 @@ export async function POST(request: Request) {
 
     if (insertError) throw new AppError("Impossible d'ajouter ce partage.", 500);
 
-    await supabaseAdmin.from("share_events").insert({ member_id: member.id, item_id: itemId });
+    const { error: eventError } = await supabaseAdmin
+      .from("share_events")
+      .insert({ member_id: member.id, item_id: itemId });
+    if (eventError) console.error("share_events insert failed", eventError);
 
     await logAction({
       groupId: member.group_id,

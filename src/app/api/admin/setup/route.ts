@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { AppError, errorResponse } from "@/lib/errors";
 import { hashPassword } from "@/lib/password";
 import { setAdminSessionCookie } from "@/lib/adminAuth";
+import { createSuperAdminSession } from "@/lib/sessions";
 
 interface SetupBody {
   email?: string;
@@ -48,14 +49,15 @@ export async function POST(request: Request) {
     const { data: created, error } = await supabaseAdmin
       .from("super_admins")
       .insert({ email, password_hash: passwordHash })
-      .select("token")
+      .select("id")
       .single();
 
     if (error || !created) {
       throw new AppError("Impossible de créer le compte super-admin.", 500);
     }
 
-    await setAdminSessionCookie(created.token);
+    const token = await createSuperAdminSession(created.id);
+    await setAdminSessionCookie(token);
 
     return NextResponse.json({ ok: true, email });
   } catch (error) {

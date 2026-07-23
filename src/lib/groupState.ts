@@ -208,11 +208,11 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
 
   const me = memberRows.find((m) => m.id === viewerMemberId);
 
-  // Requête séparée : on ne veut jamais que `password_hash` transite dans la liste
-  // `members` envoyée à tout le monde, seul le viewer a besoin de savoir s'il en a un.
+  // Requête séparée : on ne veut jamais que `password_hash`/`email` transitent dans la
+  // liste `members` envoyée à tout le monde, seul le viewer a besoin de connaître son propre état.
   const { data: viewerRow } = await supabaseAdmin
     .from("members")
-    .select("password_hash")
+    .select("password_hash, email, email_verified_at")
     .eq("id", viewerMemberId)
     .maybeSingle();
 
@@ -234,6 +234,8 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
       isAdmin: me?.is_admin ?? false,
       isOwner: me?.is_owner ?? false,
       hasPassword: Boolean(viewerRow?.password_hash),
+      email: viewerRow?.email ?? null,
+      emailVerified: Boolean(viewerRow?.email_verified_at),
       pendingRequestsCount,
     },
   };

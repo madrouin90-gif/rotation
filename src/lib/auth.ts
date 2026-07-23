@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { AppError } from "@/lib/errors";
 import type { Group } from "@/types";
 import { mergeSettings } from "@/lib/settings";
+import { createMemberSession, findMemberSession } from "@/lib/sessions";
 
 export const MEMBER_TOKEN_HEADER = "x-member-token";
 
@@ -23,14 +24,34 @@ export async function requireMember(request: Request): Promise<AuthedMember> {
     throw new AppError("Authentification manquante. Rejoins ou recrée ton profil dans ce groupe.", 401);
   }
 
-  const { data, error } = await supabaseAdmin
-    .from("members")
-    .select("id, group_id, pseudo, avatar_emoji, avatar_color, is_admin, is_owner, is_active, approval_status")
-    .eq("token", token)
-    .maybeSingle();
+  let data = await findMemberSession(token);
 
-  if (error || !data) {
-    throw new AppError("Session invalide ou expirée. Rejoins à nouveau le groupe.", 401);
+  if (!data) {
+    // Compatibilité transitoire (retirée dans une migration ultérieure une fois validée) :
+    // les sessions créées avant l'introduction de la table `sessions` reposent encore sur
+    // l'ancienne colonne members.token. On migre silencieusement en créant une session dont
+    // le token_hash dérive de CE MÊME token — le client garde le même token en localStorage,
+    // donc ses requêtes suivantes matcheront directement cette nouvelle session sans
+    // redéclencher ce chemin de secours à chaque fois.
+    const { data: legacy, error: legacyError } = await supabaseAdmin
+      .from("members")
+      .select("id, group_id, pseudo, avatar_emoji, avatar_color, is_admin, is_owner, is_active, approval_status")
+      .eq("token", token)
+      .maybeSingle();
+
+    if (legacyError || !legacy) {
+      throw new AppError("Session invalide ou expirée. Rejoins à nouveau le groupe.", 401);
+    }
+
+    // Best-effort : si la table `sessions` n'existe pas encore (migration pas encore
+    // appliquée), on continue quand même avec les données legacy plutôt que de casser
+    // toute authentification existante le temps que la migration soit exécutée.
+    try {
+      await createMemberSession(legacy.id, token);
+    } catch (sessionError) {
+      console.error("createMemberSession (migration transitoire) failed", sessionError);
+    }
+    data = legacy;
   }
 
   if (!data.is_active) {

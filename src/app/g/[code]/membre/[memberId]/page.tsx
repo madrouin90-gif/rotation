@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { SlotGrid } from "@/components/member/SlotGrid";
 import { PasswordForm } from "@/components/member/PasswordForm";
 import { PseudoForm } from "@/components/member/PseudoForm";
+import { EmailForm } from "@/components/member/EmailForm";
 import { AddShareFlow } from "@/components/add-share/AddShareFlow";
 import { ShareDetailModal } from "@/components/share/ShareDetailModal";
 import { useToast } from "@/components/ui/Toast";
@@ -138,6 +139,12 @@ export default function MemberPage() {
           <div className="flex flex-col gap-2">
             <PseudoForm token={session.token} currentPseudo={member.pseudo} onSaved={refresh} />
             <PasswordForm token={session.token} hasPassword={data.me.hasPassword} onSaved={refresh} />
+            <EmailForm
+              token={session.token}
+              currentEmail={data.me.email}
+              emailVerified={data.me.emailVerified}
+              onSaved={refresh}
+            />
           </div>
         )}
 

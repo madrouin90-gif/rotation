@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { AppError, errorResponse } from "@/lib/errors";
 import { normalizeGroupCode } from "@/lib/codes";
 import { verifyPassword } from "@/lib/password";
+import { createMemberSession } from "@/lib/sessions";
 
 interface LoginBody {
   pseudo?: string;
@@ -36,7 +37,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
 
     const { data: members, error: membersError } = await supabaseAdmin
       .from("members")
-      .select("id, token, pseudo, password_hash, is_active, failed_login_attempts, login_locked_until")
+      .select("id, pseudo, password_hash, is_active, failed_login_attempts, login_locked_until")
       .eq("group_id", group.id);
 
     if (membersError || !members) {
@@ -76,8 +77,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
         .eq("id", member.id);
     }
 
+    const token = await createMemberSession(member.id);
+
     return NextResponse.json({
-      token: member.token,
+      token,
       memberId: member.id,
       groupCode: group.code,
       groupName: group.name,

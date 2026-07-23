@@ -76,8 +76,9 @@ export function PasswordForm({ token, hasPassword, onSaved }: PasswordFormProps)
         onChange={(e) => setConfirm(e.target.value)}
         className="py-1.5 text-sm"
       />
+      <p className="text-xs text-muted">8 caractères minimum.</p>
       <div className="flex gap-2">
-        <Button size="sm" onClick={handleSave} disabled={saving || password.length < 4}>
+        <Button size="sm" onClick={handleSave} disabled={saving || password.length < 8}>
           {saving ? "..." : "Enregistrer"}
         </Button>
         <Button

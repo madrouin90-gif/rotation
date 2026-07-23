@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { AppError } from "@/lib/errors";
+import { createSuperAdminSession, findSuperAdminSession } from "@/lib/sessions";
 
 export const ADMIN_SESSION_COOKIE = "rotation_admin_session";
 
@@ -35,15 +36,26 @@ export async function requireSuperAdmin(): Promise<SuperAdmin> {
     throw new AppError("Non authentifié.", 401);
   }
 
-  const { data, error } = await supabaseAdmin
+  const session = await findSuperAdminSession(token);
+  if (session) return session;
+
+  // Compatibilité transitoire : migre silencieusement un cookie posé avant l'introduction
+  // de la table `sessions` (voir requireMember dans lib/auth.ts pour le même principe).
+  const { data: legacy, error } = await supabaseAdmin
     .from("super_admins")
     .select("id, email")
     .eq("token", token)
     .maybeSingle();
 
-  if (error || !data) {
+  if (error || !legacy) {
     throw new AppError("Session invalide ou expirée.", 401);
   }
 
-  return data;
+  // Best-effort : voir le commentaire équivalent dans requireMember (lib/auth.ts).
+  try {
+    await createSuperAdminSession(legacy.id, token);
+  } catch (sessionError) {
+    console.error("createSuperAdminSession (migration transitoire) failed", sessionError);
+  }
+  return legacy;
 }

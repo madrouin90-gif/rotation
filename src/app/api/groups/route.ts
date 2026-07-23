@@ -6,6 +6,7 @@ import { generateGroupCode } from "@/lib/codes";
 import { isValidAvatarColor, isValidAvatarEmoji } from "@/lib/avatars";
 import { hashPassword } from "@/lib/password";
 import { logAction } from "@/lib/auditLog";
+import { createMemberSession } from "@/lib/sessions";
 
 interface CreateGroupBody {
   groupName?: string;
@@ -35,8 +36,8 @@ export async function POST(request: Request) {
     if (!isValidAvatarEmoji(avatarEmoji) || !isValidAvatarColor(avatarColor)) {
       throw new AppError("Choisis un avatar dans la palette proposée.");
     }
-    if (password.length < 4 || password.length > 72) {
-      throw new AppError("Ton mot de passe doit contenir entre 4 et 72 caractères.");
+    if (password.length < 8 || password.length > 72) {
+      throw new AppError("Ton mot de passe doit contenir entre 8 et 72 caractères.");
     }
 
     let code = "";
@@ -81,7 +82,7 @@ export async function POST(request: Request) {
         is_owner: true,
         password_hash: passwordHash,
       })
-      .select("id, token")
+      .select("id")
       .single();
 
     if (memberError || !member) {
@@ -96,8 +97,10 @@ export async function POST(request: Request) {
       metadata: { groupName },
     });
 
+    const token = await createMemberSession(member.id);
+
     return NextResponse.json({
-      token: member.token,
+      token,
       memberId: member.id,
       groupCode: group.code,
       groupName: group.name,

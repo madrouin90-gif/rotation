@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase/server";
 import { AppError, errorResponse } from "@/lib/errors";
 import { verifyPassword } from "@/lib/password";
 import { setAdminSessionCookie } from "@/lib/adminAuth";
+import { createSuperAdminSession } from "@/lib/sessions";
 
 interface LoginBody {
   email?: string;
@@ -21,7 +22,7 @@ export async function POST(request: Request) {
 
     const { data, error } = await supabaseAdmin
       .from("super_admins")
-      .select("id, email, password_hash, token")
+      .select("id, email, password_hash")
       .eq("email", email)
       .maybeSingle();
 
@@ -29,7 +30,8 @@ export async function POST(request: Request) {
       throw new AppError("Courriel ou mot de passe incorrect.", 401);
     }
 
-    await setAdminSessionCookie(data.token);
+    const token = await createSuperAdminSession(data.id);
+    await setAdminSessionCookie(token);
 
     return NextResponse.json({ ok: true, email: data.email });
   } catch (error) {

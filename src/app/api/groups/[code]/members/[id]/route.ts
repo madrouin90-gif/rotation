@@ -21,12 +21,16 @@ export async function DELETE(
 
     const { data: target, error: fetchError } = await supabaseAdmin
       .from("members")
-      .select("id, group_id")
+      .select("id, group_id, is_owner")
       .eq("id", memberId)
       .maybeSingle();
 
     if (fetchError || !target || target.group_id !== member.group_id) {
       throw new AppError("Ce membre n'existe pas dans ce groupe.", 404);
+    }
+
+    if (target.is_owner) {
+      throw new AppError("Le créateur du groupe ne peut pas être retiré.", 403);
     }
 
     const { error } = await supabaseAdmin.from("members").delete().eq("id", memberId);
@@ -78,7 +82,7 @@ export async function PATCH(
 
     const { data: target, error: fetchError } = await supabaseAdmin
       .from("members")
-      .select("id, group_id, pseudo, approval_status")
+      .select("id, group_id, pseudo, approval_status, is_owner")
       .eq("id", memberId)
       .maybeSingle();
 
@@ -92,6 +96,9 @@ export async function PATCH(
       }
       if (member.id === memberId) {
         throw new AppError("Tu ne peux pas modifier ton propre statut d'admin.");
+      }
+      if (target.is_owner) {
+        throw new AppError("Le statut du créateur ne peut pas être modifié.", 403);
       }
       if (typeof body.isAdmin !== "boolean") {
         throw new AppError("Valeur invalide.");
@@ -122,6 +129,9 @@ export async function PATCH(
       if (member.id === memberId) {
         throw new AppError("Tu ne peux pas te désactiver toi-même.");
       }
+      if (target.is_owner) {
+        throw new AppError("Le créateur du groupe ne peut pas être désactivé.", 403);
+      }
       if (typeof body.isActive !== "boolean") {
         throw new AppError("Valeur invalide.");
       }
@@ -144,6 +154,10 @@ export async function PATCH(
     }
 
     if (body.action === "rename") {
+      if (target.is_owner && !member.is_owner) {
+        throw new AppError("Seul le créateur du groupe peut modifier son propre pseudo.", 403);
+      }
+
       const pseudo = body.pseudo?.trim() ?? "";
       if (pseudo.length < 1 || pseudo.length > 24) {
         throw new AppError("Le pseudo doit contenir entre 1 et 24 caractères.");
