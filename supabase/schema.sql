@@ -219,6 +219,21 @@ create table if not exists group_messages (
 create index if not exists idx_group_messages_group_id on group_messages(group_id);
 
 -- ============================================================
+-- push_subscriptions — abonnements Web Push (VAPID). Un membre peut avoir
+-- plusieurs abonnements (un par appareil/navigateur).
+-- ============================================================
+create table if not exists push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  member_id uuid not null references members(id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_push_subscriptions_member_id on push_subscriptions(member_id);
+
+-- ============================================================
 -- audit_log — journal des actions des utilisateurs, visible
 -- seulement par le super-admin. `member_pseudo` est un instantané
 -- au moment de l'action : `member_id`/`group_id` passent à null si
@@ -545,3 +560,4 @@ alter table audit_log enable row level security;
 alter table engagement_events enable row level security;
 alter table sessions enable row level security;
 alter table group_messages enable row level security;
+alter table push_subscriptions enable row level security;

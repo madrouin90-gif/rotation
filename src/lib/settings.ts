@@ -1,4 +1,4 @@
-import type { GroupSettings, SortMode, SpotifyItemType } from "@/types";
+import type { GroupSettings, NotificationEventType, SortMode, SpotifyItemType } from "@/types";
 
 export const DEFAULT_GENRE_TAGS = [
   "Pop", "Rock", "Hip-Hop/Rap", "R&B", "Électro/Dance", "Indie",
@@ -19,6 +19,7 @@ export const DEFAULT_SETTINGS: GroupSettings = {
   genre_tags: DEFAULT_GENRE_TAGS,
   is_public: false,
   require_approval: false,
+  notification_events: [],
 };
 
 export const SETTINGS_BOUNDS = {
@@ -32,6 +33,12 @@ export const SETTINGS_BOUNDS = {
 
 const ALL_SPOTIFY_TYPES: SpotifyItemType[] = ["track", "album", "artist"];
 const ALL_SORT_MODES: SortMode[] = ["member", "date"];
+const ALL_NOTIFICATION_EVENTS: NotificationEventType[] = [
+  "share_activity",
+  "chat_activity",
+  "reaction_added",
+  "join_requested",
+];
 
 /** Merge les settings stockés (potentiellement partiels/anciens) avec les défauts. */
 export function mergeSettings(stored: Partial<GroupSettings> | null | undefined): GroupSettings {
@@ -162,6 +169,15 @@ export function validateSettingsPatch(
 
   if (patch.require_approval !== undefined && typeof patch.require_approval !== "boolean") {
     errors.push({ field: "require_approval", message: "Valeur invalide pour l'approbation requise." });
+  }
+
+  if (patch.notification_events !== undefined) {
+    const events = patch.notification_events;
+    if (!Array.isArray(events) || !events.every((e) => ALL_NOTIFICATION_EVENTS.includes(e))) {
+      errors.push({ field: "notification_events", message: "Type de notification invalide." });
+    } else if (new Set(events).size !== events.length) {
+      errors.push({ field: "notification_events", message: "Chaque type de notification ne peut apparaître qu'une seule fois." });
+    }
   }
 
   if (errors.length > 0) {

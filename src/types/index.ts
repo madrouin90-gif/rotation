@@ -2,6 +2,8 @@ export type SpotifyItemType = "track" | "album" | "artist";
 
 export type SortMode = "member" | "date";
 
+export type NotificationEventType = "share_activity" | "chat_activity" | "reaction_added" | "join_requested";
+
 export interface GroupSettings {
   slots_per_member: number;
   max_members: number;
@@ -15,6 +17,7 @@ export interface GroupSettings {
   genre_tags: string[];
   is_public: boolean;
   require_approval: boolean;
+  notification_events: NotificationEventType[];
 }
 
 export interface Group {
