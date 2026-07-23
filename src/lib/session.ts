@@ -7,12 +7,43 @@ export interface MemberSession {
 
 const SESSIONS_KEY = "rotation.sessions";
 const LAST_GROUP_KEY = "rotation.lastGroupCode";
+const SESSIONS_COOKIE = "rotation_sessions";
+const LAST_GROUP_COOKIE = "rotation_last_group";
+const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
+function readCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+function writeCookie(name: string, value: string, maxAgeSeconds: number) {
+  if (typeof document === "undefined") return;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; SameSite=Lax${secure}`;
+}
+
+/**
+ * iOS peut vider le localStorage d'une PWA installée sur l'écran d'accueil (comportement
+ * WebKit documenté, indépendant de notre code — le processus web de l'app est distinct de
+ * Safari et sa persistance de stockage est moins fiable). Un cookie miroir sert de filet :
+ * plus stable dans ce cas précis, et régénère le localStorage au prochain chargement.
+ */
 function readSessions(): Record<string, MemberSession> {
   if (typeof window === "undefined") return {};
   try {
     const raw = window.localStorage.getItem(SESSIONS_KEY);
-    return raw ? (JSON.parse(raw) as Record<string, MemberSession>) : {};
+    if (raw) return JSON.parse(raw) as Record<string, MemberSession>;
+  } catch {
+    // ignoré volontairement — on retente via le cookie ci-dessous
+  }
+
+  const cookieRaw = readCookie(SESSIONS_COOKIE);
+  if (!cookieRaw) return {};
+  try {
+    const sessions = JSON.parse(cookieRaw) as Record<string, MemberSession>;
+    window.localStorage.setItem(SESSIONS_KEY, cookieRaw);
+    return sessions;
   } catch {
     return {};
   }
@@ -20,7 +51,9 @@ function readSessions(): Record<string, MemberSession> {
 
 function writeSessions(sessions: Record<string, MemberSession>) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+  const raw = JSON.stringify(sessions);
+  window.localStorage.setItem(SESSIONS_KEY, raw);
+  writeCookie(SESSIONS_COOKIE, raw, ONE_YEAR_SECONDS);
 }
 
 export function getSession(groupCode: string): MemberSession | null {
@@ -42,10 +75,17 @@ export function clearSession(groupCode: string) {
 
 export function getLastGroupCode(): string | null {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(LAST_GROUP_KEY);
+  const fromStorage = window.localStorage.getItem(LAST_GROUP_KEY);
+  if (fromStorage) return fromStorage;
+
+  const fromCookie = readCookie(LAST_GROUP_COOKIE);
+  if (fromCookie) window.localStorage.setItem(LAST_GROUP_KEY, fromCookie);
+  return fromCookie;
 }
 
 export function setLastGroupCode(code: string) {
   if (typeof window === "undefined") return;
-  window.localStorage.setItem(LAST_GROUP_KEY, code.toUpperCase());
+  const normalized = code.toUpperCase();
+  window.localStorage.setItem(LAST_GROUP_KEY, normalized);
+  writeCookie(LAST_GROUP_COOKIE, normalized, ONE_YEAR_SECONDS);
 }
