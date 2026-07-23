@@ -4,6 +4,7 @@ import { AppError, errorResponse } from "@/lib/errors";
 import { normalizeGroupCode } from "@/lib/codes";
 import { verifyPassword } from "@/lib/password";
 import { createMemberSession } from "@/lib/sessions";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 interface LoginBody {
   pseudo?: string;
@@ -15,6 +16,8 @@ const LOCK_MINUTES = 15;
 
 export async function POST(request: Request, { params }: { params: Promise<{ code: string }> }) {
   try {
+    await enforceRateLimit(request, "login", 10, 5 * 60);
+
     const { code: rawCode } = await params;
     const code = normalizeGroupCode(rawCode);
     const body = (await request.json()) as LoginBody;

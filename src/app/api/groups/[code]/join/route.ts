@@ -7,6 +7,7 @@ import { normalizeGroupCode } from "@/lib/codes";
 import { hashPassword } from "@/lib/password";
 import { logAction } from "@/lib/auditLog";
 import { createMemberSession } from "@/lib/sessions";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 interface JoinBody {
   pseudo?: string;
@@ -17,6 +18,8 @@ interface JoinBody {
 
 export async function POST(request: Request, { params }: { params: Promise<{ code: string }> }) {
   try {
+    await enforceRateLimit(request, "join", 10, 10 * 60);
+
     const { code: rawCode } = await params;
     const code = normalizeGroupCode(rawCode);
     const body = (await request.json()) as JoinBody;

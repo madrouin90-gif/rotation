@@ -7,6 +7,7 @@ import { isValidAvatarColor, isValidAvatarEmoji } from "@/lib/avatars";
 import { hashPassword } from "@/lib/password";
 import { logAction } from "@/lib/auditLog";
 import { createMemberSession } from "@/lib/sessions";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 interface CreateGroupBody {
   groupName?: string;
@@ -27,6 +28,8 @@ const UNIQUE_VIOLATION = "23505";
 
 export async function POST(request: Request) {
   try {
+    await enforceRateLimit(request, "create-group", 5, 60 * 60);
+
     const body = (await request.json()) as CreateGroupBody;
     const groupName = body.groupName?.trim() ?? "";
     const pseudo = body.pseudo?.trim() ?? "";

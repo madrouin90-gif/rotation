@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createHash } from "node:crypto";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { requireAdminInGroup, requireMemberInGroup } from "@/lib/auth";
 import { AppError, errorResponse } from "@/lib/errors";
@@ -14,7 +15,21 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
     const code = normalizeGroupCode(rawCode);
     const { member, group } = await requireMemberInGroup(request, code);
     const state = await buildGroupState(group, member.id);
-    return NextResponse.json(state);
+
+    // ETag propre au viewer (le state contient reactedByMe/myScore) : le cache est côté
+    // client uniquement, donc pas de fuite entre membres. Évite de retransmettre tout
+    // l'état du groupe à chaque poll (~7s) quand rien n'a changé depuis la dernière fois.
+    const json = JSON.stringify(state);
+    const etag = `W/"${createHash("sha256").update(json).digest("hex").slice(0, 16)}"`;
+
+    if (request.headers.get("if-none-match") === etag) {
+      return new NextResponse(null, { status: 304, headers: { ETag: etag } });
+    }
+
+    return new NextResponse(json, {
+      status: 200,
+      headers: { "Content-Type": "application/json", ETag: etag },
+    });
   } catch (error) {
     return errorResponse(error);
   }

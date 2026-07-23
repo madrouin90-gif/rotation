@@ -4,6 +4,7 @@ import { AppError, errorResponse } from "@/lib/errors";
 import { hashPassword } from "@/lib/password";
 import { setAdminSessionCookie } from "@/lib/adminAuth";
 import { createSuperAdminSession } from "@/lib/sessions";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 interface SetupBody {
   email?: string;
@@ -24,6 +25,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    await enforceRateLimit(request, "admin-login", 5, 5 * 60);
+
     const { count, error: countError } = await supabaseAdmin
       .from("super_admins")
       .select("id", { count: "exact", head: true });

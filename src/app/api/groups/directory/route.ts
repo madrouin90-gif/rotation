@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
 import { errorResponse } from "@/lib/errors";
 import { mergeSettings } from "@/lib/settings";
+import { enforceRateLimit } from "@/lib/rateLimit";
 import type { PublicGroupSummary } from "@/types";
 
 // Pas d'authentification ici — c'est le point d'entrée public avant même de rejoindre un groupe.
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    await enforceRateLimit(request, "directory", 30, 60);
+
     const { data: groups, error: groupsError } = await supabaseAdmin
       .from("groups")
       .select("id, name, code, settings")

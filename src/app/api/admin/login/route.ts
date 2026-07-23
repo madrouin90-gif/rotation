@@ -4,6 +4,7 @@ import { AppError, errorResponse } from "@/lib/errors";
 import { verifyPassword } from "@/lib/password";
 import { setAdminSessionCookie } from "@/lib/adminAuth";
 import { createSuperAdminSession } from "@/lib/sessions";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 interface LoginBody {
   email?: string;
@@ -12,6 +13,8 @@ interface LoginBody {
 
 export async function POST(request: Request) {
   try {
+    await enforceRateLimit(request, "admin-login", 5, 5 * 60);
+
     const body = (await request.json()) as LoginBody;
     const email = body.email?.trim().toLowerCase() ?? "";
     const password = body.password ?? "";

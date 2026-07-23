@@ -5,6 +5,7 @@ import { requireMember } from "@/lib/auth";
 import { AppError, errorResponse } from "@/lib/errors";
 import { logAction } from "@/lib/auditLog";
 import { sendEmail } from "@/lib/email";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -14,6 +15,8 @@ interface SetEmailBody {
 
 export async function POST(request: Request) {
   try {
+    await enforceRateLimit(request, "email", 5, 60 * 60);
+
     const member = await requireMember(request);
     const body = (await request.json()) as SetEmailBody;
     const rawEmail = body.email?.trim().toLowerCase() ?? "";

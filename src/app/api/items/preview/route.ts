@@ -3,6 +3,7 @@ import { requireMember } from "@/lib/auth";
 import { getGroupById, spotifyTypeLabelFr } from "@/lib/groupState";
 import { AppError, errorResponse } from "@/lib/errors";
 import { parseSpotifyUrl, fetchSpotifyOEmbed } from "@/lib/spotify";
+import { enforceRateLimit } from "@/lib/rateLimit";
 
 interface PreviewBody {
   url?: string;
@@ -10,6 +11,8 @@ interface PreviewBody {
 
 export async function POST(request: Request) {
   try {
+    await enforceRateLimit(request, "preview", 30, 60);
+
     const member = await requireMember(request);
     const group = await getGroupById(member.group_id);
 
