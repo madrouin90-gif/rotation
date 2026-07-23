@@ -14,10 +14,6 @@ interface MemberColumnProps {
   isMe: boolean;
   token: string;
   disableReorder?: boolean;
-  /** Nombre de rangs partagé par toutes les colonnes du mur (voir GroupWall) — garantit que
-   * cette colonne s'aligne avec les autres même quand le contenu de certaines cartes diffère
-   * en hauteur (subgrid : chaque rang occupe la même bande verticale peu importe la colonne). */
-  rows: number;
   onOpenDetail: (shareId: string) => void;
   onRated: () => void;
   onReorder: (orderedShareIds: string[]) => void;
@@ -66,7 +62,6 @@ export function MemberColumn({
   isMe,
   token,
   disableReorder,
-  rows,
   onOpenDetail,
   onRated,
   onReorder,
@@ -98,9 +93,10 @@ export function MemberColumn({
     onReorder(next);
   }
 
-  const rowIndexes = Array.from({ length: rows }, (_, i) => i);
+  const slotsPerMember = settings.slots_per_member;
+  const rows = Array.from({ length: Math.max(slotsPerMember, orderedIds.length) }, (_, i) => i);
 
-  const cards = rowIndexes.map((index) => {
+  const cards = rows.map((index) => {
     const id = orderedIds[index];
     if (!id) {
       return <EmptySlot key={`empty-${index}`} isMe={isMe} onAddEmpty={onAddEmpty} />;
@@ -125,7 +121,7 @@ export function MemberColumn({
   });
 
   return (
-    <div className="shrink-0 grid items-start" style={{ gridRow: "1 / -1", gridTemplateRows: "subgrid" }}>
+    <div className="shrink-0 w-32 sm:w-40 flex flex-col gap-3">
       <div className="flex items-center gap-2 px-1">
         <Avatar emoji={member.avatar_emoji} color={member.avatar_color} size="sm" />
         <span className="font-medium text-sm truncate">{member.pseudo}</span>
@@ -134,11 +130,11 @@ export function MemberColumn({
       {canReorder ? (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
-            {cards}
+            <div className="flex flex-col gap-3">{cards}</div>
           </SortableContext>
         </DndContext>
       ) : (
-        cards
+        <div className="flex flex-col gap-3">{cards}</div>
       )}
     </div>
   );
