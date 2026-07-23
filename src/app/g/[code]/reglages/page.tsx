@@ -9,6 +9,7 @@ import { IdentitySection } from "@/components/settings/IdentitySection";
 import { JoinRequestsSection } from "@/components/settings/JoinRequestsSection";
 import { MembersSection } from "@/components/settings/MembersSection";
 import { ParamsSection } from "@/components/settings/ParamsSection";
+import { DiscordSection } from "@/components/settings/DiscordSection";
 
 export default function ReglagesPage() {
   const params = useParams<{ code: string }>();
@@ -67,6 +68,14 @@ export default function ReglagesPage() {
         />
         <hr className="border-border" />
         <ParamsSection token={session.token} groupCode={code} settings={data.group.settings} onRefresh={refresh} />
+        <hr className="border-border" />
+        <DiscordSection
+          token={session.token}
+          groupCode={code}
+          discordGuildId={data.group.discord_guild_id}
+          discordChannelId={data.group.discord_channel_id}
+          onRefresh={refresh}
+        />
       </div>
     </div>
   );
