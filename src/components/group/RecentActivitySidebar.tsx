@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { formatDateFr } from "@/lib/dates";
+import { spotifyAppUri } from "@/lib/spotifyUri";
 import type { HistoryEvent } from "@/types";
 
 interface RecentActivitySidebarProps {
@@ -32,27 +33,32 @@ export function RecentActivitySidebar({ groupCode, token }: RecentActivitySideba
       {!error && events && events.length > 0 && (
         <ul className="flex flex-col gap-2">
           {events.map((event) => (
-            <li key={event.id} className="flex items-center gap-2.5 bg-surface rounded-xl p-2">
-              {event.item.artwork_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={event.item.artwork_url}
-                  alt={event.item.title}
-                  className="w-10 h-10 rounded-lg object-cover shrink-0"
-                />
-              ) : (
-                <div className="w-10 h-10 rounded-lg bg-surface-2 flex items-center justify-center text-sm shrink-0">
-                  🎵
+            <li key={event.id}>
+              <a
+                href={spotifyAppUri(event.item.type, event.item.spotify_id)}
+                className="flex items-center gap-2.5 bg-surface rounded-xl p-2 hover:bg-surface-2 transition cursor-pointer"
+              >
+                {event.item.artwork_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={event.item.artwork_url}
+                    alt={event.item.title}
+                    className="w-10 h-10 rounded-lg object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-surface-2 flex items-center justify-center text-sm shrink-0">
+                    🎵
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-medium truncate">{event.item.title}</p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Avatar emoji={event.member.avatarEmoji} color={event.member.avatarColor} size="xs" />
+                    <span className="text-[11px] text-muted truncate">{event.member.pseudo}</span>
+                  </div>
                 </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium truncate">{event.item.title}</p>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <Avatar emoji={event.member.avatarEmoji} color={event.member.avatarColor} size="xs" />
-                  <span className="text-[11px] text-muted truncate">{event.member.pseudo}</span>
-                </div>
-              </div>
-              <span className="text-[10px] text-muted shrink-0">{formatDateFr(event.occurredAt)}</span>
+                <span className="text-[10px] text-muted shrink-0">{formatDateFr(event.occurredAt)}</span>
+              </a>
             </li>
           ))}
         </ul>

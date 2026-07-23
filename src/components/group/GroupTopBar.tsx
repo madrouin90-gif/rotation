@@ -74,6 +74,14 @@ export function GroupTopBar({
             🏆
           </Link>
 
+          <Link
+            href="/guide"
+            className="hidden sm:flex w-9 h-9 rounded-full bg-surface-2 hover:bg-surface-2/70 items-center justify-center transition cursor-pointer"
+            title="Guide d'utilisation"
+          >
+            ❓
+          </Link>
+
           {isAdmin && (
             <Link
               href={`/g/${groupCode}/reglages`}

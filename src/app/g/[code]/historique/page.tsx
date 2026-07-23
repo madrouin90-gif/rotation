@@ -7,10 +7,10 @@ import { useMemberSession } from "@/hooks/useMemberSession";
 import { useGroupData } from "@/hooks/useGroupData";
 import { HistoryFilters } from "@/components/history/HistoryFilters";
 import { Avatar } from "@/components/ui/Avatar";
-import { ListenButton } from "@/components/share/ListenButton";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { formatDateFr } from "@/lib/dates";
 import { spotifyTypeLabelFr } from "@/lib/typeLabels";
+import { spotifyAppUri } from "@/lib/spotifyUri";
 import type { HistoryEvent } from "@/types";
 
 export default function HistoriquePage() {
@@ -102,37 +102,38 @@ export default function HistoriquePage() {
         {!error && events && events.length > 0 && (
           <ul className="flex flex-col gap-3">
             {events.map((event) => (
-              <li key={event.id} className="flex items-center gap-4 bg-surface rounded-2xl p-3">
-                {event.item.artwork_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={event.item.artwork_url}
-                    alt={event.item.title}
-                    className="w-14 h-14 rounded-xl object-cover shrink-0"
-                  />
-                ) : (
-                  <div className="w-14 h-14 rounded-xl bg-surface-2 flex items-center justify-center text-xl shrink-0">
-                    🎵
+              <li key={event.id}>
+                <a
+                  href={spotifyAppUri(event.item.type, event.item.spotify_id)}
+                  className="flex items-center gap-4 bg-surface rounded-2xl p-3 hover:bg-surface-2 transition cursor-pointer"
+                >
+                  {event.item.artwork_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={event.item.artwork_url}
+                      alt={event.item.title}
+                      className="w-14 h-14 rounded-xl object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className="w-14 h-14 rounded-xl bg-surface-2 flex items-center justify-center text-xl shrink-0">
+                      🎵
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">{event.item.title}</p>
+                    <p className="text-sm text-muted truncate">
+                      {event.item.artist_name ? `${event.item.artist_name} · ` : ""}
+                      {spotifyTypeLabelFr(event.item.type)}
+                      {event.item.genres.length > 0 ? ` · ${event.item.genres.join(", ")}` : ""}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <Avatar emoji={event.member.avatarEmoji} color={event.member.avatarColor} size="xs" />
+                      <span className="text-xs text-muted">{event.member.pseudo}</span>
+                      <span className="text-xs text-muted">· {formatDateFr(event.occurredAt)}</span>
+                    </div>
                   </div>
-                )}
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium truncate">{event.item.title}</p>
-                  <p className="text-sm text-muted truncate">
-                    {event.item.artist_name ? `${event.item.artist_name} · ` : ""}
-                    {spotifyTypeLabelFr(event.item.type)}
-                    {event.item.genres.length > 0 ? ` · ${event.item.genres.join(", ")}` : ""}
-                  </p>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <Avatar emoji={event.member.avatarEmoji} color={event.member.avatarColor} size="xs" />
-                    <span className="text-xs text-muted">{event.member.pseudo}</span>
-                    <span className="text-xs text-muted">· {formatDateFr(event.occurredAt)}</span>
-                  </div>
-                </div>
-                <ListenButton
-                  type={event.item.type}
-                  spotifyId={event.item.spotify_id}
-                  className="static bg-surface-2 hover:bg-accent"
-                />
+                  <span className="text-muted shrink-0">▶</span>
+                </a>
               </li>
             ))}
           </ul>

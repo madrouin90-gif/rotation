@@ -29,6 +29,8 @@ create table if not exists members (
   is_owner boolean not null default false,
   approval_status text not null default 'approved' check (approval_status in ('pending', 'approved')),
   password_hash text,
+  failed_login_attempts int not null default 0,
+  login_locked_until timestamptz,
   created_at timestamptz not null default now(),
   unique (group_id, pseudo)
 );
@@ -39,6 +41,8 @@ alter table members add column if not exists is_active boolean not null default 
 alter table members add column if not exists password_hash text;
 alter table members add column if not exists is_owner boolean not null default false;
 alter table members add column if not exists approval_status text not null default 'approved' check (approval_status in ('pending', 'approved'));
+alter table members add column if not exists failed_login_attempts int not null default 0;
+alter table members add column if not exists login_locked_until timestamptz;
 
 create index if not exists idx_members_approval_status on members(approval_status);
 
@@ -134,6 +138,22 @@ create index if not exists idx_share_events_item_id on share_events(item_id);
 create index if not exists idx_share_events_occurred_at on share_events(occurred_at desc);
 
 -- ============================================================
+-- super_admins — compte(s) plateforme, indépendants des groupes,
+-- avec contrôle total sur tous les groupes (tableau de bord /admin).
+-- Bootstrap unique : POST /api/admin/setup ne fonctionne que si
+-- cette table est vide, aucune inscription libre ensuite.
+-- ============================================================
+create table if not exists super_admins (
+  id uuid primary key default gen_random_uuid(),
+  email text not null unique,
+  password_hash text not null,
+  token uuid not null unique default gen_random_uuid(),
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_super_admins_token on super_admins(token);
+
+-- ============================================================
 -- Row Level Security
 -- Toutes les écritures et lectures passent par les routes API
 -- Next.js côté serveur (client Supabase avec la clé service_role,
@@ -147,3 +167,4 @@ alter table shares enable row level security;
 alter table reactions enable row level security;
 alter table ratings enable row level security;
 alter table share_events enable row level security;
+alter table super_admins enable row level security;

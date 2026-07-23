@@ -12,6 +12,8 @@ interface CreateGroupBody {
   avatarEmoji?: string;
   avatarColor?: string;
   password?: string;
+  isPublic?: boolean;
+  requireApproval?: boolean;
 }
 
 export async function POST(request: Request) {
@@ -49,9 +51,15 @@ export async function POST(request: Request) {
       throw new AppError("Impossible de générer un code de groupe unique, réessaie.", 500);
     }
 
+    const settings = {
+      ...DEFAULT_SETTINGS,
+      is_public: Boolean(body.isPublic),
+      require_approval: Boolean(body.requireApproval),
+    };
+
     const { data: group, error: groupError } = await supabaseAdmin
       .from("groups")
-      .insert({ name: groupName, code, settings: DEFAULT_SETTINGS })
+      .insert({ name: groupName, code, settings })
       .select("id, name, code")
       .single();
 

@@ -31,5 +31,38 @@ export function useGroupData(groupCode: string, token: string | null) {
     refresh();
   }, [refresh]);
 
+  useEffect(() => {
+    const POLL_MS = 7000;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
+
+    function startPolling() {
+      if (intervalId) return;
+      intervalId = setInterval(() => {
+        if (document.visibilityState === "visible") refresh();
+      }, POLL_MS);
+    }
+
+    function stopPolling() {
+      if (intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        refresh();
+      }
+    }
+
+    startPolling();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [refresh]);
+
   return { data, error, isLoading, refresh };
 }

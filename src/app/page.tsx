@@ -48,6 +48,16 @@ export default function HomePage() {
             Retourner à <span className="text-accent">{lastGroup.name}</span> →
           </Link>
         )}
+
+        <div className="mt-4 flex items-center gap-4 text-xs text-muted">
+          <Link href="/guide" className="hover:text-foreground transition">
+            Guide d&apos;utilisation
+          </Link>
+          <span>·</span>
+          <Link href="/changelog" className="hover:text-foreground transition">
+            Changelog
+          </Link>
+        </div>
       </div>
     </main>
   );

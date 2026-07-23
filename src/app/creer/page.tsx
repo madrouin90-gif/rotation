@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Toggle } from "@/components/ui/Toggle";
 import { AvatarPicker } from "@/components/onboarding/AvatarPicker";
 import { AVATAR_COLORS, AVATAR_EMOJIS } from "@/lib/avatars";
 import { apiFetch, ApiError } from "@/lib/apiClient";
@@ -21,6 +22,8 @@ export default function CreerGroupePage() {
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [emoji, setEmoji] = useState<string>(AVATAR_EMOJIS[0]);
   const [color, setColor] = useState<string>(AVATAR_COLORS[0]);
+  const [isPublic, setIsPublic] = useState(false);
+  const [requireApproval, setRequireApproval] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -36,7 +39,10 @@ export default function CreerGroupePage() {
     try {
       const result = await apiFetch<{ token: string; memberId: string; groupCode: string; groupName: string }>(
         "/api/groups",
-        { method: "POST", body: { groupName, pseudo, avatarEmoji: emoji, avatarColor: color, password } }
+        {
+          method: "POST",
+          body: { groupName, pseudo, avatarEmoji: emoji, avatarColor: color, password, isPublic, requireApproval },
+        }
       );
       saveSession({
         token: result.token,
@@ -71,6 +77,25 @@ export default function CreerGroupePage() {
               onChange={(e) => setGroupName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && groupName.trim() && setStep("profile")}
             />
+
+            <div className="flex flex-col gap-3 bg-surface-2 rounded-xl p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">Groupe public</p>
+                  <p className="text-xs text-muted">Listé dans l&apos;annuaire pour que d&apos;autres puissent le trouver.</p>
+                </div>
+                <Toggle checked={isPublic} onChange={setIsPublic} />
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">Approbation requise</p>
+                  <p className="text-xs text-muted">Les nouvelles demandes restent en attente jusqu&apos;à ton accord.</p>
+                </div>
+                <Toggle checked={requireApproval} onChange={setRequireApproval} />
+              </div>
+              <p className="text-xs text-muted">Modifiable à tout moment dans les réglages du groupe.</p>
+            </div>
+
             <Button
               size="lg"
               disabled={!groupName.trim()}
