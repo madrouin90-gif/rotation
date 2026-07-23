@@ -8,6 +8,32 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.0",
+    title: "Invitation, chat et filtres",
+    items: [
+      "Bouton « Inviter » qui copie un lien direct vers le groupe.",
+      "La barre du haut n'affiche plus que les membres réellement connectés.",
+      "Les dates affichent maintenant l'heure en plus du jour.",
+      "Chat de groupe qui regroupe les commentaires laissés sur les chansons et les messages libres, en volet latéral (PC) ou en page dédiée (mobile).",
+      "Le décompte de membres n'inclut plus les comptes désactivés.",
+      "Le genre et la note d'un partage peuvent être modifiés depuis n'importe où, pas seulement ton propre profil.",
+      "Les réactions reçues sont visibles directement sur les cartes du mur.",
+      "Filtre par genre musical sur le mur principal, en plus du filtre par membre.",
+      "Colonnes plus compactes pour une meilleure vue d'ensemble sur grand écran.",
+    ],
+  },
+  {
+    version: "1.9",
+    title: "Rétention et courriel",
+    items: [
+      "Courriel optionnel (avec lien de vérification) pour recevoir un résumé hebdomadaire du groupe.",
+      "Bannière « X nouveautés depuis ta dernière visite » à l'arrivée sur le mur.",
+      "Compteur d'écoutes sur tes propres partages (« 🎧 N membres l'ont écouté »).",
+      "Badge discret sur un partage resté inchangé depuis plus de 30 jours.",
+      "Mots de passe plus longs exigés à la création, limite de fréquence sur les actions sensibles, sessions révocables à distance en cas de changement de mot de passe.",
+    ],
+  },
+  {
     version: "1.8",
     title: "Super-admin, sécurité et mises à jour en direct",
     items: [
