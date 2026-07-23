@@ -12,6 +12,7 @@ import { PasswordForm } from "@/components/member/PasswordForm";
 import { PseudoForm } from "@/components/member/PseudoForm";
 import { EmailForm } from "@/components/member/EmailForm";
 import { DiscordLinkForm } from "@/components/member/DiscordLinkForm";
+import { PushNotificationSetup } from "@/components/push/PushNotificationSetup";
 import { AddShareFlow } from "@/components/add-share/AddShareFlow";
 import { ShareDetailModal } from "@/components/share/ShareDetailModal";
 import { useToast } from "@/components/ui/Toast";
@@ -147,6 +148,7 @@ export default function MemberPage() {
               onSaved={refresh}
             />
             <DiscordLinkForm token={session.token} discordUsername={data.me.discordUsername} onSaved={refresh} />
+            <PushNotificationSetup token={session.token} />
           </div>
         )}
 

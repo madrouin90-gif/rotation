@@ -10,6 +10,7 @@ import { JoinRequestsSection } from "@/components/settings/JoinRequestsSection";
 import { MembersSection } from "@/components/settings/MembersSection";
 import { ParamsSection } from "@/components/settings/ParamsSection";
 import { DiscordSection } from "@/components/settings/DiscordSection";
+import { NotificationsSection } from "@/components/settings/NotificationsSection";
 
 export default function ReglagesPage() {
   const params = useParams<{ code: string }>();
@@ -68,6 +69,13 @@ export default function ReglagesPage() {
         />
         <hr className="border-border" />
         <ParamsSection token={session.token} groupCode={code} settings={data.group.settings} onRefresh={refresh} />
+        <hr className="border-border" />
+        <NotificationsSection
+          token={session.token}
+          groupCode={code}
+          notificationEvents={data.group.settings.notification_events}
+          onRefresh={refresh}
+        />
         <hr className="border-border" />
         <DiscordSection
           token={session.token}
