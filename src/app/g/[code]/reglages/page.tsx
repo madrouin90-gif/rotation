@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useMemberSession } from "@/hooks/useMemberSession";
@@ -13,12 +13,22 @@ import { DiscordSection } from "@/components/settings/DiscordSection";
 import { NotificationsSection } from "@/components/settings/NotificationsSection";
 import { AdminBroadcastSection } from "@/components/settings/AdminBroadcastSection";
 
+const TABS = [
+  { id: "general", label: "Général" },
+  { id: "members", label: "Membres" },
+  { id: "notifications", label: "Notifications" },
+  { id: "discord", label: "Discord" },
+] as const;
+
+type TabId = (typeof TABS)[number]["id"];
+
 export default function ReglagesPage() {
   const params = useParams<{ code: string }>();
   const code = (params.code ?? "").toUpperCase();
   const router = useRouter();
   const { session, isLoading: sessionLoading } = useMemberSession(code);
   const { data, error, isLoading, refresh } = useGroupData(code, session?.token ?? null);
+  const [activeTab, setActiveTab] = useState<TabId>("general");
 
   useEffect(() => {
     if (!sessionLoading && !session) router.replace(`/rejoindre?code=${code}`);
@@ -45,6 +55,8 @@ export default function ReglagesPage() {
   }
   if (!data.me.isAdmin) return null;
 
+  const pendingCount = data.me.pendingRequestsCount;
+
   return (
     <div className="flex-1 flex flex-col">
       <header className="sticky top-0 z-30 backdrop-blur-md bg-background/80 border-b border-border">
@@ -54,39 +66,72 @@ export default function ReglagesPage() {
           </Link>
           <h1 className="font-display text-xl">Réglages du groupe</h1>
         </div>
+        <div className="flex gap-1 px-4 sm:px-6 pb-3 max-w-3xl mx-auto overflow-x-auto">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={`relative shrink-0 text-sm px-3 py-1.5 rounded-full transition cursor-pointer ${
+                activeTab === tab.id ? "bg-accent/20 text-foreground" : "text-muted hover:text-foreground"
+              }`}
+            >
+              {tab.label}
+              {tab.id === "members" && pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-accent-2 text-white text-[10px] font-semibold flex items-center justify-center">
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </header>
 
       <div className="max-w-3xl w-full mx-auto flex-1 flex flex-col gap-10 p-4 sm:p-6 pb-24">
-        <IdentitySection token={session.token} groupCode={code} groupName={data.group.name} onRefresh={refresh} />
-        <hr className="border-border" />
-        <JoinRequestsSection token={session.token} groupCode={code} onRefresh={refresh} />
-        <MembersSection
-          token={session.token}
-          groupCode={code}
-          members={data.members}
-          meMemberId={data.me.memberId}
-          isOwner={data.me.isOwner}
-          onRefresh={refresh}
-        />
-        <hr className="border-border" />
-        <ParamsSection token={session.token} groupCode={code} settings={data.group.settings} onRefresh={refresh} />
-        <hr className="border-border" />
-        <NotificationsSection
-          token={session.token}
-          groupCode={code}
-          notificationEvents={data.group.settings.notification_events}
-          onRefresh={refresh}
-        />
-        <hr className="border-border" />
-        <AdminBroadcastSection token={session.token} groupCode={code} members={data.members} />
-        <hr className="border-border" />
-        <DiscordSection
-          token={session.token}
-          groupCode={code}
-          discordGuildId={data.group.discord_guild_id}
-          discordChannelId={data.group.discord_channel_id}
-          onRefresh={refresh}
-        />
+        {activeTab === "general" && (
+          <>
+            <IdentitySection token={session.token} groupCode={code} groupName={data.group.name} onRefresh={refresh} />
+            <hr className="border-border" />
+            <ParamsSection token={session.token} groupCode={code} settings={data.group.settings} onRefresh={refresh} />
+          </>
+        )}
+
+        {activeTab === "members" && (
+          <>
+            <JoinRequestsSection token={session.token} groupCode={code} onRefresh={refresh} />
+            <MembersSection
+              token={session.token}
+              groupCode={code}
+              members={data.members}
+              meMemberId={data.me.memberId}
+              isOwner={data.me.isOwner}
+              onRefresh={refresh}
+            />
+          </>
+        )}
+
+        {activeTab === "notifications" && (
+          <>
+            <NotificationsSection
+              token={session.token}
+              groupCode={code}
+              notificationEvents={data.group.settings.notification_events}
+              onRefresh={refresh}
+            />
+            <hr className="border-border" />
+            <AdminBroadcastSection token={session.token} groupCode={code} members={data.members} />
+          </>
+        )}
+
+        {activeTab === "discord" && (
+          <DiscordSection
+            token={session.token}
+            groupCode={code}
+            discordGuildId={data.group.discord_guild_id}
+            discordChannelId={data.group.discord_channel_id}
+            onRefresh={refresh}
+          />
+        )}
       </div>
     </div>
   );

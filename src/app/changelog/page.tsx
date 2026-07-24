@@ -8,6 +8,13 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.5.1",
+    title: "Réglages du groupe en onglets",
+    items: [
+      "Les réglages du groupe sont maintenant organisés en onglets (Général, Membres, Notifications, Discord) en haut de la page, plutôt qu'une longue page à faire défiler.",
+    ],
+  },
+  {
     version: "2.5",
     title: "Message push par l'admin + nouvel essai d'alignement",
     items: [
