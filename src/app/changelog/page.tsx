@@ -8,6 +8,20 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.3",
+    title: "Retrait de partage, fiabilité des notifications, vue par date",
+    items: [
+      "Retire un partage directement depuis sa fiche détaillée (mur ou profil), plus besoin de passer par ton profil.",
+      "Les notifications se réactivent automatiquement à l'ouverture de l'app si iOS les avait invalidées, sans devoir les désactiver/réactiver manuellement.",
+      "Notification de nouveau partage/réaction/commentaire : ouvre directement la chanson concernée.",
+      "Tri « Par date » : liste groupée par jour (« Aujourd'hui », « Hier », dates) plutôt qu'une grille continue.",
+      "Le champ pour écrire (chat de groupe, commentaires d'une chanson) apparaît maintenant en haut, avant la liste — plus besoin de scroller pour l'atteindre.",
+      "Le menu de la barre du haut (Chat, Palmarès, Favoris, Guide, Réglages, Mon profil, Se déconnecter) est regroupé dans un menu ☰, Historique reste à part.",
+      "Filtre par membre réduit par défaut, comme le filtre par genre.",
+      "Nouveau guide d'installation de l'app (iPhone, Android, PC) dans le guide d'utilisation.",
+    ],
+  },
+  {
     version: "2.2.1",
     title: "Icône d'installation dédiée pour iPhone/iPad",
     items: [
