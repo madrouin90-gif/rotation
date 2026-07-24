@@ -275,7 +275,7 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
   // liste `members` envoyée à tout le monde, seul le viewer a besoin de connaître son propre état.
   const { data: viewerRow } = await supabaseAdmin
     .from("members")
-    .select("password_hash, email, email_verified_at, last_seen_at, discord_username")
+    .select("password_hash, email, email_verified_at, last_seen_at, discord_username, user_id")
     .eq("id", viewerMemberId)
     .maybeSingle();
 
@@ -334,6 +334,7 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
       hasPassword: Boolean(viewerRow?.password_hash),
       email: viewerRow?.email ?? null,
       emailVerified: Boolean(viewerRow?.email_verified_at),
+      hasLinkedAccount: Boolean(viewerRow?.user_id),
       discordUsername: viewerRow?.discord_username ?? null,
       pendingRequestsCount,
       unseenCount,

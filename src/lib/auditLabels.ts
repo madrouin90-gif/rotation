@@ -70,6 +70,8 @@ export function formatAuditEntry(entry: AuditEntryLike): string {
       return `${who} a délié son compte Discord`;
     case "discord_config_updated":
       return `${who} a modifié la configuration Discord du groupe`;
+    case "account_linked":
+      return `${who} a lié son profil à un compte`;
     case "admin_announce_sent":
       return m.targetPseudo
         ? `${who} a envoyé un message push à ${m.targetPseudo}`

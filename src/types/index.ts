@@ -150,6 +150,7 @@ export interface GroupState {
     hasPassword: boolean;
     email: string | null;
     emailVerified: boolean;
+    hasLinkedAccount: boolean;
     discordUsername: string | null;
     pendingRequestsCount: number;
     unseenCount: number;
