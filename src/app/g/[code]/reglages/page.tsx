@@ -11,6 +11,7 @@ import { MembersSection } from "@/components/settings/MembersSection";
 import { ParamsSection } from "@/components/settings/ParamsSection";
 import { DiscordSection } from "@/components/settings/DiscordSection";
 import { NotificationsSection } from "@/components/settings/NotificationsSection";
+import { AdminBroadcastSection } from "@/components/settings/AdminBroadcastSection";
 
 export default function ReglagesPage() {
   const params = useParams<{ code: string }>();
@@ -76,6 +77,8 @@ export default function ReglagesPage() {
           notificationEvents={data.group.settings.notification_events}
           onRefresh={refresh}
         />
+        <hr className="border-border" />
+        <AdminBroadcastSection token={session.token} groupCode={code} members={data.members} />
         <hr className="border-border" />
         <DiscordSection
           token={session.token}

@@ -8,6 +8,14 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.5",
+    title: "Message push par l'admin + nouvel essai d'alignement",
+    items: [
+      "Nouvelle section « Envoyer un message push » dans les réglages du groupe (admin) : à tout le groupe ou à un membre en particulier.",
+      "Nouvel essai pour l'alignement des rangs entre colonnes du mur, avec une approche plus simple (hauteur de carte fixe plutôt qu'une grille CSS avancée).",
+    ],
+  },
+  {
     version: "2.4.4",
     title: "Détail des votes directement sur la chanson",
     items: [
