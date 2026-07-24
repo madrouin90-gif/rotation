@@ -39,16 +39,17 @@ export function ShareListRow({ share, member, token, onOpenDetail }: ShareListRo
         </div>
       </button>
 
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center gap-2 shrink-0">
         {votesCount > 0 && (
           <span className="hidden sm:inline text-xs text-accent">
             🏆 {item.rating!.scoreOn100}/100
           </span>
         )}
         <span className="text-[11px] text-muted hidden sm:inline">{formatTimeFr(share.added_at)}</span>
-        <span title={member.pseudo}>
+        <div className="flex items-center gap-1.5">
           <Avatar emoji={member.avatar_emoji} color={member.avatar_color} size="sm" ring />
-        </span>
+          <span className="text-xs font-medium truncate max-w-[5rem] sm:max-w-[8rem]">{member.pseudo}</span>
+        </div>
         <ListenButton type={item.type} spotifyId={item.spotify_id} itemId={item.id} token={token} />
       </div>
     </div>

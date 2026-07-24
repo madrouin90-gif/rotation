@@ -90,6 +90,13 @@ export interface Item {
   isFavorite?: boolean;
 }
 
+export interface ListenerInfo {
+  id: string;
+  pseudo: string;
+  avatarEmoji: string;
+  avatarColor: string;
+}
+
 export interface Share {
   id: string;
   member_id: string;
@@ -98,7 +105,8 @@ export interface Share {
   note: string | null;
   added_at: string;
   item: Item;
-  listenersCount?: number;
+  /** Membres (autres que toi) ayant écouté ce partage — seulement peuplé sur tes propres partages. */
+  listeners?: ListenerInfo[];
 }
 
 export interface Reaction {

@@ -123,11 +123,19 @@ export function ShareCard({
             🏆 {item.rating!.scoreOn100}/100 · {votesCount} vote{votesCount > 1 ? "s" : ""}
           </p>
         )}
-        {Boolean(share.listenersCount) && (
-          <p className="text-xs text-muted">
-            🎧 {share.listenersCount} membre{share.listenersCount! > 1 ? "s" : ""} l&apos;
-            {share.listenersCount! > 1 ? "ont" : "a"} écouté
-          </p>
+        {share.listeners && share.listeners.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <div className="flex -space-x-1.5">
+              {share.listeners.slice(0, 4).map((l) => (
+                <span key={l.id} title={l.pseudo}>
+                  <Avatar emoji={l.avatarEmoji} color={l.avatarColor} size="xs" ring />
+                </span>
+              ))}
+            </div>
+            <span className="text-[11px] text-muted">
+              🎧{share.listeners.length > 4 ? ` +${share.listeners.length - 4}` : ""}
+            </span>
+          </div>
         )}
         {!isMe && <RatingWidget itemId={item.id} token={token} myScore={item.rating?.myScore ?? null} onRated={onRated} />}
       </div>

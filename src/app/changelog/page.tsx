@@ -8,6 +8,15 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.3.1",
+    title: "Qui a partagé, qui a écouté",
+    items: [
+      "Le pseudo de qui a partagé est maintenant affiché en texte (pas juste l'avatar) dans la vue « Par date ».",
+      "Le bouton « Retirer ce partage » est plus visible dans la fiche détaillée.",
+      "Sur tes propres partages, tu vois maintenant qui exactement a écouté (avatars et pseudos), pas juste un compte.",
+    ],
+  },
+  {
     version: "2.3",
     title: "Retrait de partage, fiabilité des notifications, vue par date",
     items: [

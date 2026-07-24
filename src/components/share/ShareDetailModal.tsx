@@ -201,18 +201,19 @@ export function ShareDetailModal({
               >
                 Ouvrir dans Spotify ↗
               </a>
-              {isMe && onRemove && (
-                <button
-                  type="button"
-                  onClick={handleRemove}
-                  disabled={removing}
-                  className="text-sm text-red-400 hover:underline mt-1 w-fit text-left cursor-pointer disabled:opacity-50"
-                >
-                  {removing ? "..." : "Retirer ce partage"}
-                </button>
-              )}
             </div>
           </div>
+
+          {isMe && onRemove && (
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={removing}
+              className="flex items-center justify-center gap-2 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-2xl p-3 text-sm font-medium transition cursor-pointer disabled:opacity-50"
+            >
+              {removing ? "Retrait en cours..." : "🗑️ Retirer ce partage"}
+            </button>
+          )}
 
           <SpotifyEmbedPlayer type={item.type} spotifyId={item.spotify_id} />
 
@@ -260,6 +261,22 @@ export function ShareDetailModal({
             onToggle={handleToggleReaction}
             disabled={pending}
           />
+
+          {isMe && share.listeners && share.listeners.length > 0 && (
+            <div className="flex flex-col gap-2 bg-surface-2 rounded-2xl p-4">
+              <p className="text-sm font-medium text-muted">
+                🎧 Écouté par {share.listeners.length} membre{share.listeners.length > 1 ? "s" : ""}
+              </p>
+              <div className="flex flex-wrap gap-3">
+                {share.listeners.map((l) => (
+                  <div key={l.id} className="flex items-center gap-1.5">
+                    <Avatar emoji={l.avatarEmoji} color={l.avatarColor} size="xs" />
+                    <span className="text-xs text-muted">{l.pseudo}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {((item.rating?.votesCount ?? 0) > 0 || !isMe) && (
             <div className="flex items-center justify-between gap-3 bg-surface-2 rounded-2xl p-4">

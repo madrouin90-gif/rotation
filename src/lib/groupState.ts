@@ -150,6 +150,7 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
   }
 
   const favoriteItemIds = new Set((favoriteRows ?? []).map((f) => f.item_id));
+  const memberById = new Map(memberRows.map((m) => [m.id, m]));
 
   // Nombre de membres distincts (hors viewer) ayant écouté chacun des items du viewer —
   // affiché seulement sur ses propres partages ("🎧 N membres l'ont écouté").
@@ -239,7 +240,18 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
               isFavorite: favoriteItemIds.has(s.item_id),
             },
             reactions: reactionsByShare.get(s.id) ?? [],
-            listenersCount: s.member_id === viewerMemberId ? (listenersByItem.get(s.item_id)?.size ?? 0) : undefined,
+            listeners:
+              s.member_id === viewerMemberId
+                ? Array.from(listenersByItem.get(s.item_id) ?? []).map((listenerId) => {
+                    const listenerMember = memberById.get(listenerId);
+                    return {
+                      id: listenerId,
+                      pseudo: listenerMember?.pseudo ?? "Quelqu'un",
+                      avatarEmoji: listenerMember?.avatar_emoji ?? "🎵",
+                      avatarColor: listenerMember?.avatar_color ?? "#888888",
+                    };
+                  })
+                : undefined,
           };
         }),
     };
