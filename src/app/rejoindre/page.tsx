@@ -133,7 +133,7 @@ function RejoindreForm() {
             <p className="text-muted text-sm">As-tu déjà un profil dans ce groupe ?</p>
             <div className="flex flex-col gap-3">
               <Button size="lg" onClick={() => setStep("login")}>
-                J&apos;ai déjà un compte
+                J&apos;ai déjà un profil ici
               </Button>
               <Button size="lg" variant="secondary" onClick={() => setStep("profile")}>
                 Créer un nouveau profil
