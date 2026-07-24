@@ -28,6 +28,7 @@ interface ShareDetailModalProps {
   onChanged: () => void;
   onSaveNote?: (note: string) => Promise<void> | void;
   onSaveGenres?: (genres: string[]) => Promise<void> | void;
+  onRemove?: () => Promise<void> | void;
 }
 
 export function ShareDetailModal({
@@ -42,6 +43,7 @@ export function ShareDetailModal({
   onChanged,
   onSaveNote,
   onSaveGenres,
+  onRemove,
 }: ShareDetailModalProps) {
   const { showError } = useToast();
   const [pending, setPending] = useState(false);
@@ -50,6 +52,17 @@ export function ShareDetailModal({
   const [postingComment, setPostingComment] = useState(false);
   const [editingNote, setEditingNote] = useState(false);
   const [editingGenres, setEditingGenres] = useState(false);
+  const [removing, setRemoving] = useState(false);
+
+  async function handleRemove() {
+    if (!onRemove) return;
+    setRemoving(true);
+    try {
+      await onRemove();
+    } finally {
+      setRemoving(false);
+    }
+  }
 
   const { item } = share;
   const comments: Comment[] = item.comments ?? [];
@@ -188,6 +201,16 @@ export function ShareDetailModal({
               >
                 Ouvrir dans Spotify ↗
               </a>
+              {isMe && onRemove && (
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  disabled={removing}
+                  className="text-sm text-red-400 hover:underline mt-1 w-fit text-left cursor-pointer disabled:opacity-50"
+                >
+                  {removing ? "..." : "Retirer ce partage"}
+                </button>
+              )}
             </div>
           </div>
 

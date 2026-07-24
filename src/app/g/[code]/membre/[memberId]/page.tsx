@@ -203,6 +203,14 @@ export default function MemberPage() {
           onChanged={refresh}
           onSaveNote={(note) => handleSaveNote(selectedShare.id, note)}
           onSaveGenres={(genres) => handleSaveGenres(selectedShare.id, genres)}
+          onRemove={
+            isMe
+              ? async () => {
+                  await handleRemove(selectedShare.id);
+                  setSelectedShareId(null);
+                }
+              : undefined
+          }
         />
       )}
     </div>

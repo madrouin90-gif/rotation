@@ -32,7 +32,7 @@ export default function GroupPage() {
   const searchParams = useSearchParams();
   const { session, isLoading: sessionLoading, removeSession } = useMemberSession(code);
   const { data, error, isLoading, refresh } = useGroupData(code, session?.token ?? null);
-  const { showError } = useToast();
+  const { showError, showSuccess } = useToast();
 
   const [sortModeOverride, setSortModeOverride] = useState<SortMode | null>(null);
   const [showAddShare, setShowAddShare] = useState(false);
@@ -148,6 +148,16 @@ export default function GroupPage() {
       refresh();
     } catch (e) {
       showError(e instanceof ApiError ? e.message : "Impossible d'enregistrer les genres.");
+    }
+  }
+
+  async function handleRemoveShare(shareId: string) {
+    try {
+      await apiFetch(`/api/shares/${shareId}`, { method: "DELETE", token: session!.token });
+      showSuccess("Partage retiré.");
+      refresh();
+    } catch (e) {
+      showError(e instanceof ApiError ? e.message : "Impossible de retirer ce partage.");
     }
   }
 
@@ -320,6 +330,14 @@ export default function GroupPage() {
           onChanged={refresh}
           onSaveNote={(note) => handleSaveNote(selectedShare.share.id, note)}
           onSaveGenres={(genres) => handleSaveGenres(selectedShare.share.id, genres)}
+          onRemove={
+            selectedShare.member.id === data.me.memberId
+              ? async () => {
+                  await handleRemoveShare(selectedShare.share.id);
+                  setSelectedShareId(null);
+                }
+              : undefined
+          }
         />
       )}
     </div>
