@@ -2,6 +2,31 @@ import Link from "next/link";
 
 const SECTIONS = [
   {
+    title: "Installer l'app sur iPhone / iPad (iOS)",
+    body: [
+      "Ouvre le site dans Safari — obligatoire pour l'installation et les notifications, même si d'autres navigateurs sont installés sur ton appareil.",
+      "Appuie sur le bouton Partager (le carré avec une flèche vers le haut), puis choisis « Sur l'écran d'accueil ».",
+      "Ouvre ensuite Rotation depuis cette nouvelle icône (pas depuis un onglet Safari) : c'est seulement depuis l'app installée que tu peux activer les notifications, dans tes réglages de profil.",
+      "Nécessite iOS 16.4 ou plus récent pour les notifications. Après une longue période sans ouvrir l'app, iOS peut invalider les notifications — l'app les réactive automatiquement d'elle-même dès que tu la rouvres, sans rien à refaire.",
+    ],
+  },
+  {
+    title: "Installer l'app sur Android",
+    body: [
+      "Ouvre le site dans Chrome. Une bannière ou une icône d'installation apparaît parfois automatiquement dans la barre d'adresse.",
+      "Sinon, ouvre le menu ⋮ (trois points, en haut à droite) puis choisis « Installer l'application » (ou « Ajouter à l'écran d'accueil » selon la version de Chrome).",
+      "Les notifications fonctionnent aussi directement dans un onglet Chrome, sans avoir à installer l'app au préalable.",
+    ],
+  },
+  {
+    title: "Installer l'app sur ordinateur (Chrome / Edge)",
+    body: [
+      "Une petite icône d'installation (un écran avec un +) apparaît à droite de la barre d'adresse — clique dessus puis « Installer ».",
+      "Si tu ne la vois pas, ouvre le menu ⋮ / ··· du navigateur et cherche « Installer Rotation... ».",
+      "L'app s'ouvre alors dans sa propre fenêtre, sans barre d'adresse, comme une application native.",
+    ],
+  },
+  {
     title: "Les slots et le top pick",
     body: [
       "Chaque membre dispose d'un nombre fixe de « slots » (par défaut 5, réglable par l'admin) pour partager des chansons, albums ou artistes Spotify. C'est volontairement limité : pas de scroll infini, juste ce qui compte vraiment pour toi en ce moment.",
