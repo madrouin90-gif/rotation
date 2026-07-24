@@ -8,6 +8,13 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.5.2",
+    title: "Plus de genres musicaux par défaut",
+    items: [
+      "Ajoute Alternative, Ambient, House, Techno, Trap, Grunge, Emo, Post-punk, Gospel, Disco, Lo-fi, Synthwave, Chanson française, J-Pop, Reggaeton, Afrobeat et Bande originale à la liste par défaut (nouveaux groupes seulement — un groupe existant peut les ajouter manuellement ou réinitialiser ses réglages).",
+    ],
+  },
+  {
     version: "2.5.1",
     title: "Réglages du groupe en onglets",
     items: [

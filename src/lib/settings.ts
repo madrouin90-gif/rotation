@@ -4,6 +4,9 @@ export const DEFAULT_GENRE_TAGS = [
   "Pop", "Rock", "Hip-Hop/Rap", "R&B", "Électro/Dance", "Indie",
   "Metal", "Jazz", "Classique", "Country", "Folk", "Reggae",
   "Latino", "K-Pop", "Punk", "Blues", "Soul", "Funk",
+  "Alternative", "Ambient", "House", "Techno", "Trap", "Grunge",
+  "Emo", "Post-punk", "Gospel", "Disco", "Lo-fi", "Synthwave",
+  "Chanson française", "J-Pop", "Reggaeton", "Afrobeat", "Bande originale",
 ];
 
 export const DEFAULT_SETTINGS: GroupSettings = {
