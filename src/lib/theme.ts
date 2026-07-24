@@ -1,4 +1,4 @@
-export type ThemeId = "dark" | "light" | "midnight" | "sunset" | "mono";
+export type ThemeId = "dark" | "light";
 
 export interface ThemeOption {
   id: ThemeId;
@@ -10,9 +10,6 @@ export interface ThemeOption {
 export const THEME_OPTIONS: ThemeOption[] = [
   { id: "dark", label: "Sombre", swatch: ["#0a0a0f", "#1e1e29", "#8b5cf6"] },
   { id: "light", label: "Clair", swatch: ["#f5f5f8", "#ececf1", "#7c3aed"] },
-  { id: "midnight", label: "Minuit", swatch: ["#000000", "#17171c", "#22d3ee"] },
-  { id: "sunset", label: "Coucher de soleil", swatch: ["#1a0f12", "#301c22", "#fb923c"] },
-  { id: "mono", label: "Contraste", swatch: ["#000000", "#1b1b1b", "#ef4444"] },
 ];
 
 export const DEFAULT_THEME: ThemeId = "dark";

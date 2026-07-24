@@ -18,7 +18,7 @@ Partage musical entre amis. Chaque membre d'un groupe dispose de quelques slots 
 - Historique filtrable (membre, genre, date) et barre d'activité récente
 - Commentaires persistants et favoris privés par membre
 - Groupes publics (annuaire) ou privés (code à 6 caractères), avec approbation optionnelle des nouvelles demandes
-- 5 thèmes d'affichage, persistants par appareil
+- 2 thèmes d'affichage (clair et sombre), persistants par appareil
 - Compte super-admin plateforme (tableau de bord `/admin`, hors du parcours normal) avec journal d'audit
 - Courriel optionnel par membre (vérifié par lien), digest hebdomadaire des nouveautés du groupe
 - Intégration Discord optionnelle : un membre lie son compte (OAuth2), un groupe se relie à un salon, et un bot (déployé séparément, voir `discord-bot/`) ajoute automatiquement à son profil tout lien Spotify qu'il poste dans ce salon

@@ -8,6 +8,11 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.4.1",
+    title: "Thèmes simplifiés",
+    items: ["Ne garde que les thèmes Sombre et Clair — Minuit, Coucher de soleil et Contraste sont retirés."],
+  },
+  {
     version: "2.4",
     title: "Partage simplifié depuis Spotify",
     items: [
