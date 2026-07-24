@@ -2,8 +2,9 @@
 
 import { useEffect, useRef } from "react";
 import { MemberColumn } from "@/components/group/MemberColumn";
-import { ShareCard } from "@/components/group/ShareCard";
-import type { GroupSettings, MemberWithShares, SortMode } from "@/types";
+import { ShareListRow } from "@/components/group/ShareListRow";
+import { dateGroupKey, formatDateGroupLabel } from "@/lib/dates";
+import type { GroupSettings, MemberWithShares, ShareWithReactions, SortMode } from "@/types";
 
 const PAN_CLICK_THRESHOLD_PX = 5;
 
@@ -100,21 +101,37 @@ export function GroupWall({
     const allShares = activeMembers.flatMap((m) => m.shares.map((s) => ({ share: s, member: m })));
     allShares.sort((a, b) => new Date(b.share.added_at).getTime() - new Date(a.share.added_at).getTime());
 
+    // Regroupe les partages consécutifs (déjà triés du plus récent au plus ancien) par jour
+    // civil, pour une liste clairement délimitée par date plutôt qu'une grille continue.
+    const dateGroups: { key: string; label: string; items: { share: ShareWithReactions; member: MemberWithShares }[] }[] =
+      [];
+    for (const entry of allShares) {
+      const key = dateGroupKey(entry.share.added_at);
+      const last = dateGroups[dateGroups.length - 1];
+      if (last && last.key === key) {
+        last.items.push(entry);
+      } else {
+        dateGroups.push({ key, label: formatDateGroupLabel(entry.share.added_at), items: [entry] });
+      }
+    }
+
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-7 gap-3 sm:gap-4 p-4 sm:p-6">
-        {allShares.map(({ share, member }) => (
-          <ShareCard
-            key={share.id}
-            share={share}
-            member={member}
-            settings={settings}
-            isMe={member.id === viewerMemberId}
-            token={token}
-            showOwnerAvatar
-            showDate
-            onOpenDetail={() => onSelectShare(share.id)}
-            onRated={onRated}
-          />
+      <div className="flex flex-col gap-6 p-4 sm:p-6">
+        {dateGroups.map((group) => (
+          <div key={group.key} className="flex flex-col gap-2">
+            <h3 className="text-sm font-semibold text-muted px-1">{group.label}</h3>
+            <div className="flex flex-col divide-y divide-border/60 bg-surface-2/40 rounded-2xl overflow-hidden">
+              {group.items.map(({ share, member }) => (
+                <ShareListRow
+                  key={share.id}
+                  share={share}
+                  member={member}
+                  token={token}
+                  onOpenDetail={() => onSelectShare(share.id)}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </div>
     );
