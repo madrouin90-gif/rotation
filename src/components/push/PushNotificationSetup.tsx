@@ -37,7 +37,24 @@ export function PushNotificationSetup({ token }: PushNotificationSetupProps) {
     navigator.serviceWorker.ready.then(async (registration) => {
       const sub = await registration.pushManager.getSubscription();
       setState(sub ? "subscribed" : "unsubscribed");
+
+      // Re-synchronise silencieusement l'abonnement auprès du serveur à chaque ouverture :
+      // iOS peut invalider un abonnement push côté serveur (notre nettoyage automatique sur
+      // échec d'envoi, ou expiration silencieuse) sans que le navigateur en soit informé —
+      // tant que l'abonnement du navigateur est encore valide, ça évite d'avoir à désactiver/
+      // réactiver manuellement pour le retrouver.
+      if (sub) {
+        const json = sub.toJSON();
+        apiFetch("/api/account/push/subscribe", {
+          method: "POST",
+          token,
+          body: { endpoint: json.endpoint, keys: json.keys },
+        }).catch(() => {
+          // Best-effort — pas de toast pour ne pas déranger au chargement.
+        });
+      }
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function handleEnable() {
