@@ -40,9 +40,16 @@ create table if not exists users (
   email_verify_token uuid,
   failed_login_attempts int not null default 0,
   login_locked_until timestamptz,
+  password_reset_token uuid,
+  password_reset_expires_at timestamptz,
   created_at timestamptz not null default now()
 );
 create unique index if not exists idx_users_email on users (lower(email));
+
+alter table users add column if not exists password_reset_token uuid;
+alter table users add column if not exists password_reset_expires_at timestamptz;
+create index if not exists idx_users_password_reset_token
+  on users(password_reset_token) where password_reset_token is not null;
 
 -- ============================================================
 -- members

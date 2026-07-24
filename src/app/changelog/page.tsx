@@ -8,6 +8,14 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.6.1",
+    title: "Mot de passe oublié + bannière de sécurisation élargie",
+    items: [
+      "Nouveau lien « Mot de passe oublié ? » sur la connexion par compte : envoie un lien de réinitialisation par email (valide 1 heure).",
+      "La bannière proposant de lier ton profil à un compte s'affiche maintenant même sans email — elle t'accompagne pour en ajouter un, le vérifier, puis lier ton profil, afin d'avoir un filet de sécurité si tu perds l'accès à ton profil.",
+    ],
+  },
+  {
     version: "2.6",
     title: "Comptes utilisateur — un seul compte pour plusieurs groupes",
     items: [

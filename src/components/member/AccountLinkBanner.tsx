@@ -14,22 +14,75 @@ interface AccountLinkBannerProps {
   onLinked: () => void;
 }
 
+type Stage = "no-email" | "unverified" | "verified";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const STAGE_MESSAGES: Record<Stage, string> = {
+  "no-email":
+    "🔗 Ajoute un email pour sécuriser l'accès à ce profil et pouvoir le lier à un compte (utile si tu perds ta session).",
+  unverified: "📬 Vérifie ton courriel pour pouvoir lier ce profil à un compte.",
+  verified: "🔗 Lie ce profil à un compte pour te connecter avec ton email et rejoindre d'autres groupes facilement ?",
+};
+
 /**
- * Propose aux membres existants (ayant déjà un email vérifié, mais créés avant
- * l'introduction des comptes) de lier leur profil à un compte — leur permet de se
- * connecter avec leur email et, éventuellement, de rejoindre d'autres groupes sans
- * redéfinir de mot de passe. Réapparaît à chaque visite tant que le profil n'est pas
- * lié (pas de mémorisation de "plus tard" au-delà de la session en cours).
+ * Propose à tout membre non lié à un compte de sécuriser son accès — en 3 étapes selon
+ * son état : ajouter un email, le vérifier, puis lier le profil. Réapparaît à chaque
+ * visite tant que le profil n'est pas lié (pas de mémorisation de "plus tard" au-delà de
+ * la session en cours). Sans email/compte, un membre qui perd sa session locale n'a
+ * aucun moyen de récupérer l'accès (pas de "mot de passe oublié" pour les profils non
+ * liés) — cette bannière est la façon de s'en prémunir à l'avance.
  */
 export function AccountLinkBanner({ token, email, emailVerified, hasLinkedAccount, onLinked }: AccountLinkBannerProps) {
   const { showError, showSuccess } = useToast();
   const [dismissed, setDismissed] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [newEmail, setNewEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [saving, setSaving] = useState(false);
 
-  if (dismissed || hasLinkedAccount || !email || !emailVerified) return null;
+  if (dismissed || hasLinkedAccount) return null;
+
+  const stage: Stage = !email ? "no-email" : !emailVerified ? "unverified" : "verified";
+
+  async function handleAddEmail() {
+    if (!EMAIL_RE.test(newEmail.trim())) {
+      showError("Adresse courriel invalide.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await apiFetch<{ ok: true; verificationSent: boolean }>("/api/account/email", {
+        method: "POST",
+        token,
+        body: { email: newEmail.trim() },
+      });
+      showSuccess("Courriel de vérification envoyé.");
+      onLinked();
+    } catch (e) {
+      showError(e instanceof ApiError ? e.message : "Impossible d'enregistrer ce courriel.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleResend() {
+    if (!email) return;
+    setSaving(true);
+    try {
+      await apiFetch<{ ok: true; verificationSent: boolean }>("/api/account/email", {
+        method: "POST",
+        token,
+        body: { email },
+      });
+      showSuccess("Courriel de vérification renvoyé.");
+    } catch (e) {
+      showError(e instanceof ApiError ? e.message : "Impossible de renvoyer le courriel.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function handleLink() {
     if (password !== confirm) {
@@ -61,16 +114,27 @@ export function AccountLinkBanner({ token, email, emailVerified, hasLinkedAccoun
     <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 pt-4">
       <div className="flex flex-col gap-3 bg-accent/15 border border-accent/30 rounded-xl px-4 py-3 text-sm">
         <div className="flex items-center justify-between gap-3">
-          <span>🔗 Lie ce profil à un compte pour te connecter avec ton email et rejoindre d&apos;autres groupes facilement ?</span>
+          <span>{STAGE_MESSAGES[stage]}</span>
           <div className="flex items-center gap-3 shrink-0">
-            {!expanded && (
+            {stage === "unverified" ? (
               <button
                 type="button"
-                onClick={() => setExpanded(true)}
-                className="text-accent font-medium hover:underline cursor-pointer"
+                onClick={handleResend}
+                disabled={saving}
+                className="text-accent font-medium hover:underline cursor-pointer disabled:opacity-50"
               >
-                Lier
+                {saving ? "..." : "Renvoyer"}
               </button>
+            ) : (
+              !expanded && (
+                <button
+                  type="button"
+                  onClick={() => setExpanded(true)}
+                  className="text-accent font-medium hover:underline cursor-pointer"
+                >
+                  {stage === "no-email" ? "Ajouter" : "Lier"}
+                </button>
+              )
             )}
             <button
               type="button"
@@ -83,7 +147,39 @@ export function AccountLinkBanner({ token, email, emailVerified, hasLinkedAccoun
           </div>
         </div>
 
-        {expanded && (
+        {expanded && stage === "no-email" && (
+          <div className="flex flex-col gap-2 bg-surface-2 rounded-xl p-3">
+            <Input
+              autoFocus
+              type="email"
+              placeholder="Ton courriel"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAddEmail()}
+              className="py-1.5 text-sm"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={handleAddEmail}
+                disabled={saving}
+                className="text-accent font-medium hover:underline cursor-pointer disabled:opacity-50 text-sm"
+              >
+                {saving ? "..." : "Confirmer"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setExpanded(false)}
+                disabled={saving}
+                className="text-muted hover:text-foreground transition cursor-pointer text-sm"
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        )}
+
+        {expanded && stage === "verified" && (
           <div className="flex flex-col gap-2 bg-surface-2 rounded-xl p-3">
             <Input
               autoFocus

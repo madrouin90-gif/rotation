@@ -141,6 +141,22 @@ export async function revokeAllMemberSessions(memberId: string, exceptTokenHash?
   if (error) console.error("revokeAllMemberSessions failed", error);
 }
 
+/** Révoque toutes les sessions d'un compte, sauf éventuellement celle de la requête en cours. */
+export async function revokeAllUserSessions(userId: string, exceptTokenHash?: string) {
+  let query = supabaseAdmin
+    .from("sessions")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("user_id", userId)
+    .is("revoked_at", null);
+
+  if (exceptTokenHash) {
+    query = query.neq("token_hash", exceptTokenHash);
+  }
+
+  const { error } = await query;
+  if (error) console.error("revokeAllUserSessions failed", error);
+}
+
 export async function revokeSuperAdminSessionByToken(token: string) {
   const { error } = await supabaseAdmin
     .from("sessions")

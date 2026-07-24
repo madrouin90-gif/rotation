@@ -17,6 +17,7 @@ function CompteConnexionForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") ?? "/compte/mes-groupes";
+  const passwordReset = searchParams.get("passwordReset") === "1";
 
   return (
     <main className="flex-1 flex flex-col items-center justify-center px-6 py-16">
@@ -27,6 +28,11 @@ function CompteConnexionForm() {
         <div className="mt-6 flex flex-col gap-4">
           <h1 className="font-display text-3xl">Se connecter</h1>
           <p className="text-muted text-sm">Avec ton compte Rotation (email + mot de passe).</p>
+          {passwordReset && (
+            <p className="text-sm text-accent bg-accent/15 border border-accent/30 rounded-xl px-3 py-2">
+              Mot de passe mis à jour, reconnecte-toi.
+            </p>
+          )}
           <AccountAuthForm initialMode="login" onAuthenticated={() => router.push(next)} />
         </div>
       </div>

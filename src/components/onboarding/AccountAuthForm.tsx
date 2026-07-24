@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { apiFetch, ApiError } from "@/lib/apiClient";
@@ -91,6 +92,11 @@ export function AccountAuthForm({ initialMode = "signup", onAuthenticated }: Acc
         />
       )}
       {mode === "signup" && <p className="text-xs text-muted">8 caractères minimum.</p>}
+      {mode === "login" && (
+        <Link href="/compte/mot-de-passe-oublie" className="text-xs text-muted hover:text-foreground transition w-fit">
+          Mot de passe oublié ?
+        </Link>
+      )}
       {error && <p className="text-sm text-red-400">{error}</p>}
       <Button
         onClick={handleSubmit}
