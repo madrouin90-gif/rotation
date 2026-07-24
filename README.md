@@ -62,7 +62,6 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...
 | `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `NEXT_PUBLIC_DISCORD_CLIENT_ID` | Lien de compte Discord (OAuth2) | Section Discord des réglages/profil non fonctionnelle |
 | `DISCORD_BOT_SECRET` | Sécurise `/api/discord/share` (appelé par le bot) | L'endpoint refuse toute requête (401) |
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Notifications push (Web Push) | Personne ne peut activer les notifications, tout le reste fonctionne |
-| `SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET` | Suggestion automatique de genre (API officielle Spotify) | Le tagging de genre reste entièrement manuel |
 
 `.env.local` est ignoré par git (voir `.gitignore`) — ne le commite jamais.
 
@@ -118,16 +117,6 @@ iOS n'autorise le Web Push **que pour les apps installées sur l'écran d'accuei
 2. Bouton **Partager** → **Sur l'écran d'accueil**.
 3. Ouvre l'app depuis l'icône ajoutée à l'écran d'accueil (pas depuis un onglet Safari).
 4. Va dans ton profil → « Activer les notifications » → accepte la permission.
-
-## 7. Suggestion automatique de genre (optionnelle)
-
-Quand un lien Spotify est prévisualisé (formulaire de partage ou bot Discord), Rotation
-peut suggérer automatiquement 1 à 3 genres parmi ceux configurés dans le groupe, en
-s'appuyant sur les genres associés à l'artiste dans le catalogue Spotify.
-
-1. Crée une application sur le [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
-2. Renseigne `SPOTIFY_CLIENT_ID` et `SPOTIFY_CLIENT_SECRET` dans les variables d'environnement de l'app (flux Client Credentials — aucune connexion utilisateur Spotify requise, aucune redirect URI à configurer).
-3. Sans ces variables, la suggestion est simplement absente (tableau vide) — le tagging manuel reste disponible partout.
 
 ## Fonctionnement
 

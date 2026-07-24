@@ -7,8 +7,6 @@ import { logAction } from "@/lib/auditLog";
 import { enforceRateLimit } from "@/lib/rateLimit";
 import { placeShareForMember } from "@/lib/shareActions";
 import { notifyGroupEvent } from "@/lib/notifications";
-import { parseSpotifyUrl } from "@/lib/spotify";
-import { suggestGenres } from "@/lib/spotifyApi";
 
 interface DiscordShareBody {
   guildId?: string;
@@ -62,12 +60,7 @@ export async function POST(request: Request) {
 
     const group = await getGroupById(groupRow.id);
 
-    // Pas d'étape interactive de sélection de genres depuis Discord (contrairement au
-    // formulaire de l'app) — applique directement les suggestions automatiques.
-    const parsed = parseSpotifyUrl(spotifyUrl);
-    const genres = parsed ? await suggestGenres(parsed.type, parsed.spotifyId, group.settings.genre_tags) : [];
-
-    const outcome = await placeShareForMember(memberRow, group, { spotifyUrl, genres });
+    const outcome = await placeShareForMember(memberRow, group, { spotifyUrl });
 
     if (outcome.status === "slots_full") {
       return NextResponse.json({ status: "slots_full" }, { status: 409 });

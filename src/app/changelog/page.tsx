@@ -8,14 +8,6 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
-    version: "2.5.3",
-    title: "Genres suggérés automatiquement",
-    items: [
-      "Quand tu prévisualises un lien Spotify, les genres sont maintenant suggérés automatiquement à partir de l'artiste (catalogue Spotify officiel) — tu peux toujours les ajuster avant de partager.",
-      "Fonctionne aussi pour les partages venant de Discord.",
-    ],
-  },
-  {
     version: "2.5.2",
     title: "Plus de genres musicaux par défaut",
     items: [
