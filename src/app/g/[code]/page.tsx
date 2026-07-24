@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useMemberSession } from "@/hooks/useMemberSession";
 import { useGroupData } from "@/hooks/useGroupData";
@@ -29,6 +29,7 @@ export default function GroupPage() {
   const params = useParams<{ code: string }>();
   const code = (params.code ?? "").toUpperCase();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { session, isLoading: sessionLoading, removeSession } = useMemberSession(code);
   const { data, error, isLoading, refresh } = useGroupData(code, session?.token ?? null);
   const { showError } = useToast();
@@ -60,6 +61,17 @@ export default function GroupPage() {
       router.replace(`/rejoindre?code=${code}`);
     }
   }, [sessionLoading, session, router, code]);
+
+  useEffect(() => {
+    // Lien profond depuis une notification push (?share=...) : ouvre la fiche du partage
+    // une seule fois au chargement, puis nettoie l'URL pour ne pas la rouvrir au refresh.
+    const shareParam = searchParams.get("share");
+    if (!shareParam) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedShareId(shareParam);
+    router.replace(`/g/${code}`, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const sortMode = sortModeOverride ?? data?.group.settings.default_sort ?? null;
   const me = useMemo(() => data?.members.find((m) => m.id === data.me.memberId), [data]);

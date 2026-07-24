@@ -84,7 +84,7 @@ export async function POST(request: Request) {
         onlyMemberIds: [share.member_id],
         title: `${member.pseudo} a réagi ${emoji}`,
         body: "à l'un de tes partages",
-        url: `/g/${group.code}`,
+        url: `/g/${group.code}?share=${shareId}`,
       })
     );
 

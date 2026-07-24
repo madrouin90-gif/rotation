@@ -53,7 +53,7 @@ export async function POST(request: Request) {
         actorMemberId: member.id,
         title: replaceRank !== undefined ? `${member.pseudo} a remplacé un partage` : `${member.pseudo} a partagé`,
         body: outcome.title,
-        url: `/g/${group.code}`,
+        url: outcome.shareId ? `/g/${group.code}?share=${outcome.shareId}` : `/g/${group.code}`,
       })
     );
 

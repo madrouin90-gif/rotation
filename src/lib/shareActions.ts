@@ -12,7 +12,9 @@ export interface PlaceShareInput {
   genres?: string[];
 }
 
-export type PlaceShareOutcome = { status: "ok"; rank: number; title: string } | { status: "slots_full" };
+export type PlaceShareOutcome =
+  | { status: "ok"; rank: number; title: string; shareId: string | null }
+  | { status: "slots_full" };
 
 interface PlaceShareRpcResult {
   out_rank: number | null;
@@ -157,5 +159,14 @@ export async function placeShareForMember(
     return { status: "slots_full" };
   }
 
-  return { status: "ok", rank: placed.out_rank as number, title: oembed.title };
+  // Pour le lien profond depuis une notification push (ouvrir directement la chanson) —
+  // le RPC ne retourne que le rang, pas l'id du partage.
+  const { data: shareRow } = await supabaseAdmin
+    .from("shares")
+    .select("id")
+    .eq("member_id", member.id)
+    .eq("rank", placed.out_rank as number)
+    .maybeSingle();
+
+  return { status: "ok", rank: placed.out_rank as number, title: oembed.title, shareId: shareRow?.id ?? null };
 }

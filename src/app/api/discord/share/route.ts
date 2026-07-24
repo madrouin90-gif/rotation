@@ -81,7 +81,7 @@ export async function POST(request: Request) {
         actorMemberId: memberRow.id,
         title: `${memberRow.pseudo} a partagé`,
         body: outcome.title,
-        url: `/g/${group.code}`,
+        url: outcome.shareId ? `/g/${group.code}?share=${outcome.shareId}` : `/g/${group.code}`,
       })
     );
 

@@ -78,7 +78,7 @@ export async function POST(request: Request) {
         actorMemberId: member.id,
         title: `${member.pseudo} a commenté`,
         body: commentBody,
-        url: `/g/${group.code}`,
+        url: validShareId ? `/g/${group.code}?share=${validShareId}` : `/g/${group.code}`,
       });
     });
 
