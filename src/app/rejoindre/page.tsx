@@ -6,10 +6,11 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { AvatarPicker } from "@/components/onboarding/AvatarPicker";
+import { AccountAuthForm } from "@/components/onboarding/AccountAuthForm";
 import { PublicGroupsList } from "@/components/onboarding/PublicGroupsList";
 import { AVATAR_COLORS, AVATAR_EMOJIS } from "@/lib/avatars";
 import { apiFetch, ApiError } from "@/lib/apiClient";
-import { saveSession } from "@/lib/session";
+import { saveSession, getUserSession, type UserSession } from "@/lib/session";
 
 type Step = "code" | "choice" | "profile" | "login" | "pending";
 
@@ -28,13 +29,11 @@ function RejoindreForm() {
   const [code, setCode] = useState(searchParams.get("code")?.toUpperCase() ?? "");
   const [pseudo, setPseudo] = useState("");
   const [password, setPassword] = useState("");
-  const [passwordConfirm, setPasswordConfirm] = useState("");
   const [emoji, setEmoji] = useState<string>(AVATAR_EMOJIS[0]);
   const [color, setColor] = useState<string>(AVATAR_COLORS[0]);
+  const [userSession, setUserSession] = useState<UserSession | null>(() => getUserSession());
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const passwordsMatch = password === passwordConfirm;
 
   async function handleLogin() {
     setError(null);
@@ -60,10 +59,7 @@ function RejoindreForm() {
   }
 
   async function handleJoin() {
-    if (!passwordsMatch) {
-      setError("Les mots de passe ne correspondent pas.");
-      return;
-    }
+    if (!userSession) return;
     setError(null);
     setLoading(true);
     try {
@@ -76,7 +72,8 @@ function RejoindreForm() {
         approvalStatus: "pending" | "approved";
       }>(`/api/groups/${normalizedCode}/join`, {
         method: "POST",
-        body: { pseudo, avatarEmoji: emoji, avatarColor: color, password },
+        userToken: userSession.token,
+        body: { pseudo, avatarEmoji: emoji, avatarColor: color },
       });
       saveSession({
         token: result.token,
@@ -181,52 +178,47 @@ function RejoindreForm() {
         {step === "profile" && (
           <div className="mt-6 flex flex-col gap-5">
             <h1 className="font-display text-3xl">Ton profil</h1>
-            <p className="text-muted text-sm">Choisis un pseudo unique dans le groupe et un avatar.</p>
-            <Input
-              autoFocus
-              placeholder="Ton pseudo"
-              value={pseudo}
-              maxLength={24}
-              onChange={(e) => setPseudo(e.target.value)}
-            />
-            <AvatarPicker
-              emoji={emoji}
-              color={color}
-              onChange={(newEmoji, newColor) => {
-                setEmoji(newEmoji);
-                setColor(newColor);
-              }}
-            />
-            <div className="flex flex-col gap-2">
-              <Input
-                placeholder="Mot de passe"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              <Input
-                placeholder="Confirme le mot de passe"
-                type="password"
-                value={passwordConfirm}
-                onChange={(e) => setPasswordConfirm(e.target.value)}
-              />
-              <p className="text-xs text-muted">
-                Te permettra de te reconnecter depuis un autre appareil (8 caractères minimum).
-              </p>
-            </div>
-            {error && <p className="text-sm text-red-400">{error}</p>}
-            <div className="flex gap-3">
-              <Button variant="secondary" onClick={() => setStep("choice")} disabled={loading}>
-                Retour
-              </Button>
-              <Button
-                className="flex-1"
-                disabled={!pseudo.trim() || password.length < 8 || !passwordsMatch || loading}
-                onClick={handleJoin}
-              >
-                {loading ? "Connexion..." : "Rejoindre"}
-              </Button>
-            </div>
+
+            {!userSession ? (
+              <>
+                <p className="text-muted text-sm">
+                  Un compte est nécessaire pour rejoindre un groupe — il te permettra aussi de rejoindre d&apos;autres
+                  groupes sans redéfinir de mot de passe à chaque fois.
+                </p>
+                <AccountAuthForm onAuthenticated={setUserSession} />
+                <Button variant="secondary" onClick={() => setStep("choice")}>
+                  Retour
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-muted text-sm">Choisis un pseudo unique dans le groupe et un avatar.</p>
+                <Input
+                  autoFocus
+                  placeholder="Ton pseudo"
+                  value={pseudo}
+                  maxLength={24}
+                  onChange={(e) => setPseudo(e.target.value)}
+                />
+                <AvatarPicker
+                  emoji={emoji}
+                  color={color}
+                  onChange={(newEmoji, newColor) => {
+                    setEmoji(newEmoji);
+                    setColor(newColor);
+                  }}
+                />
+                {error && <p className="text-sm text-red-400">{error}</p>}
+                <div className="flex gap-3">
+                  <Button variant="secondary" onClick={() => setStep("choice")} disabled={loading}>
+                    Retour
+                  </Button>
+                  <Button className="flex-1" disabled={!pseudo.trim() || loading} onClick={handleJoin}>
+                    {loading ? "Connexion..." : "Rejoindre"}
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         )}
 

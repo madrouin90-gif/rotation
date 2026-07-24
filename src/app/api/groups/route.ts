@@ -4,9 +4,9 @@ import { AppError, errorResponse } from "@/lib/errors";
 import { DEFAULT_SETTINGS } from "@/lib/settings";
 import { generateGroupCode } from "@/lib/codes";
 import { isValidAvatarColor, isValidAvatarEmoji } from "@/lib/avatars";
-import { hashPassword } from "@/lib/password";
 import { logAction } from "@/lib/auditLog";
 import { createMemberSession } from "@/lib/sessions";
+import { requireUser } from "@/lib/userAuth";
 import { enforceRateLimit } from "@/lib/rateLimit";
 
 interface CreateGroupBody {
@@ -14,7 +14,6 @@ interface CreateGroupBody {
   pseudo?: string;
   avatarEmoji?: string;
   avatarColor?: string;
-  password?: string;
   isPublic?: boolean;
   requireApproval?: boolean;
 }
@@ -30,12 +29,13 @@ export async function POST(request: Request) {
   try {
     await enforceRateLimit(request, "create-group", 5, 60 * 60);
 
+    const user = await requireUser(request);
+
     const body = (await request.json()) as CreateGroupBody;
     const groupName = body.groupName?.trim() ?? "";
     const pseudo = body.pseudo?.trim() ?? "";
     const avatarEmoji = body.avatarEmoji ?? "";
     const avatarColor = body.avatarColor ?? "";
-    const password = body.password ?? "";
 
     if (groupName.length < 1 || groupName.length > 60) {
       throw new AppError("Le nom du groupe doit contenir entre 1 et 60 caractères.");
@@ -46,17 +46,12 @@ export async function POST(request: Request) {
     if (!isValidAvatarEmoji(avatarEmoji) || !isValidAvatarColor(avatarColor)) {
       throw new AppError("Choisis un avatar dans la palette proposée.");
     }
-    if (password.length < 8 || password.length > 72) {
-      throw new AppError("Ton mot de passe doit contenir entre 8 et 72 caractères.");
-    }
 
     const settings = {
       ...DEFAULT_SETTINGS,
       is_public: Boolean(body.isPublic),
       require_approval: Boolean(body.requireApproval),
     };
-
-    const passwordHash = await hashPassword(password);
 
     let created: CreateGroupWithOwnerResult | null = null;
     let code = "";
@@ -71,7 +66,8 @@ export async function POST(request: Request) {
           p_pseudo: pseudo,
           p_avatar_emoji: avatarEmoji,
           p_avatar_color: avatarColor,
-          p_password_hash: passwordHash,
+          p_password_hash: null,
+          p_user_id: user.id,
         })
         .single<CreateGroupWithOwnerResult>();
 

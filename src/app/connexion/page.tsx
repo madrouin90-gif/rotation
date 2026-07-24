@@ -8,11 +8,11 @@ import { Input } from "@/components/ui/Input";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import { saveSession } from "@/lib/session";
 
-type Step = "code" | "credentials";
+type Step = "choice" | "code" | "credentials";
 
 export default function ConnexionPage() {
   const router = useRouter();
-  const [step, setStep] = useState<Step>("code");
+  const [step, setStep] = useState<Step>("choice");
   const [code, setCode] = useState("");
   const [pseudo, setPseudo] = useState("");
   const [password, setPassword] = useState("");
@@ -48,6 +48,21 @@ export default function ConnexionPage() {
         <Link href="/" className="text-sm text-muted hover:text-foreground transition">
           ← Retour
         </Link>
+
+        {step === "choice" && (
+          <div className="mt-6 flex flex-col gap-4">
+            <h1 className="font-display text-3xl">Se connecter</h1>
+            <p className="text-muted text-sm">Avec ton compte Rotation, ou un ancien profil sans compte.</p>
+            <div className="flex flex-col gap-3">
+              <Button size="lg" onClick={() => router.push("/compte/connexion")}>
+                Avec mon compte (email)
+              </Button>
+              <Button size="lg" variant="secondary" onClick={() => setStep("code")}>
+                Ancien profil, sans compte
+              </Button>
+            </div>
+          </div>
+        )}
 
         {step === "code" && (
           <div className="mt-6 flex flex-col gap-4">

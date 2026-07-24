@@ -4,9 +4,9 @@ import { AppError, errorResponse } from "@/lib/errors";
 import { mergeSettings } from "@/lib/settings";
 import { isValidAvatarColor, isValidAvatarEmoji } from "@/lib/avatars";
 import { normalizeGroupCode } from "@/lib/codes";
-import { hashPassword } from "@/lib/password";
 import { logAction } from "@/lib/auditLog";
 import { createMemberSession } from "@/lib/sessions";
+import { requireUser } from "@/lib/userAuth";
 import { enforceRateLimit } from "@/lib/rateLimit";
 import { notifyGroupEvent } from "@/lib/notifications";
 
@@ -14,12 +14,13 @@ interface JoinBody {
   pseudo?: string;
   avatarEmoji?: string;
   avatarColor?: string;
-  password?: string;
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ code: string }> }) {
   try {
     await enforceRateLimit(request, "join", 10, 10 * 60);
+
+    const user = await requireUser(request);
 
     const { code: rawCode } = await params;
     const code = normalizeGroupCode(rawCode);
@@ -27,16 +28,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
     const pseudo = body.pseudo?.trim() ?? "";
     const avatarEmoji = body.avatarEmoji ?? "";
     const avatarColor = body.avatarColor ?? "";
-    const password = body.password ?? "";
 
     if (pseudo.length < 1 || pseudo.length > 24) {
       throw new AppError("Ton pseudo doit contenir entre 1 et 24 caractères.");
     }
     if (!isValidAvatarEmoji(avatarEmoji) || !isValidAvatarColor(avatarColor)) {
       throw new AppError("Choisis un avatar dans la palette proposée.");
-    }
-    if (password.length < 8 || password.length > 72) {
-      throw new AppError("Ton mot de passe doit contenir entre 8 et 72 caractères.");
     }
 
     const { data: group, error: groupError } = await supabaseAdmin
@@ -53,11 +50,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
 
     const { data: existingMembers, error: countError } = await supabaseAdmin
       .from("members")
-      .select("id, pseudo, approval_status")
+      .select("id, pseudo, approval_status, user_id")
       .eq("group_id", group.id);
 
     if (countError || !existingMembers) {
       throw new AppError("Impossible de vérifier les membres du groupe.", 500);
+    }
+
+    if (existingMembers.some((m) => m.user_id === user.id)) {
+      throw new AppError("Tu as déjà un profil dans ce groupe — connecte-toi plutôt.", 409);
     }
 
     const approvedCount = existingMembers.filter((m) => m.approval_status === "approved").length;
@@ -72,7 +73,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
       throw new AppError("Ce pseudo est déjà pris dans ce groupe. Choisis-en un autre.");
     }
 
-    const passwordHash = await hashPassword(password);
     const approvalStatus = settings.require_approval ? "pending" : "approved";
 
     const { data: member, error: memberError } = await supabaseAdmin
@@ -83,7 +83,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ cod
         avatar_emoji: avatarEmoji,
         avatar_color: avatarColor,
         is_admin: false,
-        password_hash: passwordHash,
+        user_id: user.id,
         approval_status: approvalStatus,
       })
       .select("id")
