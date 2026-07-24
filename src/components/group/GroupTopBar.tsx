@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
+import { Logo } from "@/components/ui/Logo";
 import { useToast } from "@/components/ui/Toast";
 import type { MemberWithShares } from "@/types";
 
@@ -56,6 +57,9 @@ export function GroupTopBar({
     <header className="sticky top-0 z-30 backdrop-blur-md bg-background/80 border-b border-border">
       <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 max-w-6xl mx-auto">
         <div className="flex items-center gap-3 min-w-0">
+          <Link href="/" className="shrink-0 text-foreground" title="Rotation">
+            <Logo size={26} />
+          </Link>
           <h1 className="font-display text-xl truncate">{groupName}</h1>
           <span className="hidden sm:inline text-xs text-muted bg-surface-2 px-2 py-1 rounded-full">{groupCode}</span>
           <button

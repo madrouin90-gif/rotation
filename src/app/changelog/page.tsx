@@ -8,6 +8,11 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.3.2",
+    title: "Logo dans le mur du groupe",
+    items: ["Le logo Rotation apparaît maintenant à côté du nom du groupe, en plus de la page d'accueil."],
+  },
+  {
     version: "2.3.1",
     title: "Qui a partagé, qui a écouté",
     items: [
