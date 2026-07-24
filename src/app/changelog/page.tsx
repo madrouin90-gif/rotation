@@ -8,6 +8,15 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.6",
+    title: "Comptes utilisateur — un seul compte pour plusieurs groupes",
+    items: [
+      "Créer ou rejoindre un groupe demande maintenant un compte (email + mot de passe) plutôt qu'un mot de passe propre à ce profil.",
+      "Nouvelle page « Mes groupes » : ouvre n'importe lequel de tes groupes liés à ton compte sans redéfinir de mot de passe.",
+      "Les anciens profils (pseudo + mot de passe, sans compte) continuent de fonctionner à l'identique — une bannière propose de les lier à un compte si tu as déjà un email vérifié.",
+    ],
+  },
+  {
     version: "2.5.2",
     title: "Plus de genres musicaux par défaut",
     items: [

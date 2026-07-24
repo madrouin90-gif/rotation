@@ -18,6 +18,7 @@ Partage musical entre amis. Chaque membre d'un groupe dispose de quelques slots 
 - Historique filtrable (membre, genre, date) et barre d'activité récente
 - Commentaires persistants et favoris privés par membre
 - Groupes publics (annuaire) ou privés (code à 6 caractères), avec approbation optionnelle des nouvelles demandes
+- Compte utilisateur (email + mot de passe) requis pour créer/rejoindre un groupe, distinct du profil par groupe (pseudo, avatar) — un même compte peut être lié à plusieurs groupes (« Mes groupes »)
 - 2 thèmes d'affichage (clair et sombre), persistants par appareil
 - Compte super-admin plateforme (tableau de bord `/admin`, hors du parcours normal) avec journal d'audit
 - Courriel optionnel par membre (vérifié par lien), digest hebdomadaire des nouveautés du groupe
@@ -117,6 +118,17 @@ iOS n'autorise le Web Push **que pour les apps installées sur l'écran d'accuei
 2. Bouton **Partager** → **Sur l'écran d'accueil**.
 3. Ouvre l'app depuis l'icône ajoutée à l'écran d'accueil (pas depuis un onglet Safari).
 4. Va dans ton profil → « Activer les notifications » → accepte la permission.
+
+## 7. Comptes utilisateur et profils de groupe
+
+Deux notions distinctes coexistent :
+
+- **Le compte** (`users`) : email + mot de passe, l'identité globale. Obligatoire pour créer ou rejoindre un groupe.
+- **Le profil** (`members`) : pseudo, avatar, admin/owner — propre à un groupe donné, lié au compte via `members.user_id`.
+
+Un même compte peut être lié à plusieurs profils (un par groupe) : la page **Mes groupes** (`/compte/mes-groupes`) liste tous les groupes liés au compte connecté et permet d'en ouvrir un sans redéfinir de mot de passe (`POST /api/auth/select-group` échange le token de compte contre un token de profil classique — le reste de l'app ne fait aucune différence entre les deux ensuite).
+
+Les profils créés **avant** l'introduction de ce système (pseudo + mot de passe propre au groupe, sans compte) continuent de fonctionner à l'identique — page `/connexion`, choix « Ancien profil, sans compte ». S'ils ont déjà un email vérifié, une bannière sur le mur du groupe leur propose de lier leur profil à un nouveau compte (`POST /api/account/link`) ; sinon rien ne change pour eux.
 
 ## Fonctionnement
 
