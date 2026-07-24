@@ -14,6 +14,7 @@ import { GroupChatPanel } from "@/components/group/GroupChatPanel";
 import { SortToggle } from "@/components/group/SortToggle";
 import { AddShareFlow } from "@/components/add-share/AddShareFlow";
 import { ShareDetailModal } from "@/components/share/ShareDetailModal";
+import { AutoPushPrompt } from "@/components/push/AutoPushPrompt";
 import { useToast } from "@/components/ui/Toast";
 import { apiFetch, ApiError } from "@/lib/apiClient";
 import type { GroupState, SortMode } from "@/types";
@@ -190,6 +191,8 @@ export default function GroupPage() {
           router.push("/");
         }}
       />
+
+      <AutoPushPrompt token={session.token} />
 
       {capturedUnseen.captured && capturedUnseen.value > 0 && !bannerDismissed && (
         <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 pt-4">

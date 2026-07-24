@@ -8,6 +8,13 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.4.3",
+    title: "Activation des notifications proposée à l'installation",
+    items: [
+      "À la première ouverture de l'app installée sur l'écran d'accueil, une bannière propose directement d'activer les notifications — plus besoin d'aller la chercher dans ton profil. La permission du navigateur reste requise (impossible de l'activer sans ton accord).",
+    ],
+  },
+  {
     version: "2.4.2",
     title: "Le nom de l'artiste s'affiche enfin",
     items: [

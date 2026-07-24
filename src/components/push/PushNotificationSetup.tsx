@@ -4,18 +4,13 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useToast } from "@/components/ui/Toast";
 import { apiFetch, ApiError } from "@/lib/apiClient";
+import { requestPushPermissionAndSubscribe } from "@/lib/pushClient";
 
 interface PushNotificationSetupProps {
   token: string;
 }
 
 type PushState = "unsupported" | "loading" | "denied" | "subscribed" | "unsubscribed";
-
-function urlBase64ToUint8Array(base64: string): Uint8Array {
-  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
-  const raw = atob((base64 + padding).replace(/-/g, "+").replace(/_/g, "/"));
-  return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
-}
 
 export function PushNotificationSetup({ token }: PushNotificationSetupProps) {
   const { showError, showSuccess } = useToast();
@@ -60,31 +55,11 @@ export function PushNotificationSetup({ token }: PushNotificationSetupProps) {
   async function handleEnable() {
     setBusy(true);
     try {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
+      const result = await requestPushPermissionAndSubscribe(token);
+      if (result === "denied") {
         setState("denied");
         return;
       }
-
-      const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!vapidPublicKey) {
-        showError("Les notifications ne sont pas configurées sur ce serveur.");
-        return;
-      }
-
-      const registration = await navigator.serviceWorker.ready;
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
-      });
-
-      const json = subscription.toJSON();
-      await apiFetch("/api/account/push/subscribe", {
-        method: "POST",
-        token,
-        body: { endpoint: json.endpoint, keys: json.keys },
-      });
-
       setState("subscribed");
       showSuccess("Notifications activées.");
     } catch (e) {
