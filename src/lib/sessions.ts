@@ -39,6 +39,12 @@ export interface SessionSuperAdminRow {
   email: string;
 }
 
+export interface SessionUserRow {
+  id: string;
+  email: string;
+  email_verified_at: string | null;
+}
+
 /**
  * `existingToken` permet de migrer silencieusement un ancien token en clair (members.token /
  * super_admins.token, colonnes retirées en phase 1.4) vers une session : on dérive le
@@ -59,6 +65,15 @@ export async function createSuperAdminSession(superAdminId: string, existingToke
   const { error } = await supabaseAdmin
     .from("sessions")
     .insert({ super_admin_id: superAdminId, token_hash: sha256hex(token) });
+  if (error) throw error;
+  return token;
+}
+
+export async function createUserSession(userId: string, existingToken?: string): Promise<string> {
+  const token = existingToken ?? generateOpaqueToken();
+  const { error } = await supabaseAdmin
+    .from("sessions")
+    .insert({ user_id: userId, token_hash: sha256hex(token) });
   if (error) throw error;
   return token;
 }
@@ -93,6 +108,21 @@ export async function findSuperAdminSession(token: string): Promise<SessionSuper
 
   touchLastUsed(data.id);
   return data.super_admins as unknown as SessionSuperAdminRow;
+}
+
+export async function findUserSession(token: string): Promise<SessionUserRow | null> {
+  const { data, error } = await supabaseAdmin
+    .from("sessions")
+    .select("id, users(id, email, email_verified_at)")
+    .eq("token_hash", sha256hex(token))
+    .is("revoked_at", null)
+    .not("user_id", "is", null)
+    .maybeSingle();
+
+  if (error || !data || !data.users) return null;
+
+  touchLastUsed(data.id);
+  return data.users as unknown as SessionUserRow;
 }
 
 /** Révoque toutes les sessions d'un membre, sauf éventuellement celle de la requête en cours. */

@@ -5,10 +5,18 @@ export interface MemberSession {
   groupName: string;
 }
 
+export interface UserSession {
+  token: string;
+  userId: string;
+  email: string;
+}
+
 const SESSIONS_KEY = "rotation.sessions";
 const LAST_GROUP_KEY = "rotation.lastGroupCode";
 const SESSIONS_COOKIE = "rotation_sessions";
 const LAST_GROUP_COOKIE = "rotation_last_group";
+const USER_SESSION_KEY = "rotation.userSession";
+const USER_SESSION_COOKIE = "rotation_user_session";
 const ONE_YEAR_SECONDS = 60 * 60 * 24 * 365;
 
 function readCookie(name: string): string | null {
@@ -94,4 +102,42 @@ export function setLastGroupCode(code: string) {
   const normalized = code.toUpperCase();
   window.localStorage.setItem(LAST_GROUP_KEY, normalized);
   writeCookie(LAST_GROUP_COOKIE, normalized, ONE_YEAR_SECONDS);
+}
+
+/**
+ * Session de compte (email + mot de passe), distincte des sessions de membre par
+ * groupe ci-dessus : un seul compte actif par appareil, indépendant du groupe
+ * consulté. Même filet cookie-miroir pour la fiabilité sur iOS installé en PWA.
+ */
+export function getUserSession(): UserSession | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(USER_SESSION_KEY);
+    if (raw) return JSON.parse(raw) as UserSession;
+  } catch {
+    // ignoré volontairement — on retente via le cookie ci-dessous
+  }
+
+  const cookieRaw = readCookie(USER_SESSION_COOKIE);
+  if (!cookieRaw) return null;
+  try {
+    const session = JSON.parse(cookieRaw) as UserSession;
+    window.localStorage.setItem(USER_SESSION_KEY, cookieRaw);
+    return session;
+  } catch {
+    return null;
+  }
+}
+
+export function saveUserSession(session: UserSession) {
+  if (typeof window === "undefined") return;
+  const raw = JSON.stringify(session);
+  window.localStorage.setItem(USER_SESSION_KEY, raw);
+  writeCookie(USER_SESSION_COOKIE, raw, ONE_YEAR_SECONDS);
+}
+
+export function clearUserSession() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(USER_SESSION_KEY);
+  writeCookie(USER_SESSION_COOKIE, "", 0);
 }

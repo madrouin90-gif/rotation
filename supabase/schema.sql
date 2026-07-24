@@ -25,6 +25,26 @@ create unique index if not exists idx_groups_discord_channel
   where discord_channel_id is not null;
 
 -- ============================================================
+-- users — compte global (email + mot de passe), au-dessus des
+-- membres. Un `user` peut être lié à plusieurs `members` (un par
+-- groupe) via members.user_id, ce qui permet à terme à une même
+-- personne d'appartenir à plusieurs groupes sous un seul identifiant.
+-- Les membres sans compte lié (user_id null) continuent de
+-- fonctionner à l'identique (pseudo + mot de passe propre au groupe).
+-- ============================================================
+create table if not exists users (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  password_hash text not null,
+  email_verified_at timestamptz,
+  email_verify_token uuid,
+  failed_login_attempts int not null default 0,
+  login_locked_until timestamptz,
+  created_at timestamptz not null default now()
+);
+create unique index if not exists idx_users_email on users (lower(email));
+
+-- ============================================================
 -- members
 -- ============================================================
 create table if not exists members (
@@ -69,6 +89,10 @@ alter table members add column if not exists discord_user_id text;
 alter table members add column if not exists discord_username text;
 alter table members add column if not exists discord_link_state uuid;
 alter table members add column if not exists discord_link_state_expires_at timestamptz;
+alter table members add column if not exists user_id uuid references users(id) on delete set null;
+
+create unique index if not exists idx_members_group_user
+  on members(group_id, user_id) where user_id is not null;
 
 create index if not exists idx_members_approval_status on members(approval_status);
 create index if not exists idx_members_email_verify_token on members(email_verify_token);
@@ -298,18 +322,55 @@ create table if not exists sessions (
   id uuid primary key default gen_random_uuid(),
   member_id uuid references members(id) on delete cascade,
   super_admin_id uuid references super_admins(id) on delete cascade,
+  user_id uuid references users(id) on delete cascade,
   token_hash text not null unique,
   created_at timestamptz not null default now(),
   last_used_at timestamptz not null default now(),
   revoked_at timestamptz,
-  check (
-    (member_id is not null and super_admin_id is null) or
-    (member_id is null and super_admin_id is not null)
+  constraint sessions_exactly_one_identity check (
+    (case when member_id is not null then 1 else 0 end) +
+    (case when super_admin_id is not null then 1 else 0 end) +
+    (case when user_id is not null then 1 else 0 end) = 1
   )
 );
 
 create index if not exists idx_sessions_member_id on sessions(member_id);
 create index if not exists idx_sessions_super_admin_id on sessions(super_admin_id);
+
+alter table sessions add column if not exists user_id uuid references users(id) on delete cascade;
+create index if not exists idx_sessions_user_id on sessions(user_id);
+
+-- Pour les bases déjà créées avant l'ajout de user_id : le check ci-dessus
+-- (défini dans le create table) ne s'applique pas à une table déjà
+-- existante. On retrouve dynamiquement l'ancien check à 2 colonnes (nom non
+-- supposé, généré par Postgres) et on le remplace par la version à 3
+-- colonnes — même pattern que shares_member_rank_key plus bas.
+do $$
+declare
+  v_conname text;
+begin
+  select conname into v_conname
+  from pg_constraint
+  where conrelid = 'sessions'::regclass
+    and contype = 'c'
+    and pg_get_constraintdef(oid) like '%member_id%super_admin_id%'
+    and pg_get_constraintdef(oid) not like '%user_id%';
+
+  if v_conname is not null then
+    execute format('alter table sessions drop constraint %I', v_conname);
+  end if;
+
+  if not exists (
+    select 1 from pg_constraint
+    where conrelid = 'sessions'::regclass and conname = 'sessions_exactly_one_identity'
+  ) then
+    execute 'alter table sessions add constraint sessions_exactly_one_identity check (
+      (case when member_id is not null then 1 else 0 end) +
+      (case when super_admin_id is not null then 1 else 0 end) +
+      (case when user_id is not null then 1 else 0 end) = 1
+    )';
+  end if;
+end $$;
 
 -- ============================================================
 -- Fonctions RPC (atomicité) — toutes les écritures multi-étapes
@@ -346,7 +407,14 @@ end $$;
 
 -- create_group_with_owner — crée le groupe puis son membre owner dans
 -- la même transaction. Un conflit sur groups.code remonte l'exception
--- telle quelle (le TS retente avec un nouveau code).
+-- telle quelle (le TS retente avec un nouveau code). p_user_id (optionnel)
+-- lie directement le membre owner à un compte utilisateur existant.
+--
+-- Changement de signature (ajout de p_user_id) : `create or replace`
+-- n'autorisant pas un changement de liste de paramètres, l'ancienne
+-- version à 7 arguments doit être supprimée en premier.
+drop function if exists create_group_with_owner(text, text, jsonb, text, text, text, text);
+
 create or replace function create_group_with_owner(
   p_name text,
   p_code text,
@@ -354,7 +422,8 @@ create or replace function create_group_with_owner(
   p_pseudo text,
   p_avatar_emoji text,
   p_avatar_color text,
-  p_password_hash text
+  p_password_hash text,
+  p_user_id uuid default null
 ) returns table (group_id uuid, member_id uuid)
 language plpgsql
 security definer
@@ -368,8 +437,8 @@ begin
   values (p_name, p_code, p_settings)
   returning id into v_group_id;
 
-  insert into members (group_id, pseudo, avatar_emoji, avatar_color, is_admin, is_owner, password_hash)
-  values (v_group_id, p_pseudo, p_avatar_emoji, p_avatar_color, true, true, p_password_hash)
+  insert into members (group_id, pseudo, avatar_emoji, avatar_color, is_admin, is_owner, password_hash, user_id)
+  values (v_group_id, p_pseudo, p_avatar_emoji, p_avatar_color, true, true, p_password_hash, p_user_id)
   returning id into v_member_id;
 
   return query select v_group_id, v_member_id;
@@ -533,7 +602,7 @@ begin
 end;
 $$;
 
-grant execute on function create_group_with_owner(text, text, jsonb, text, text, text, text) to service_role;
+grant execute on function create_group_with_owner(text, text, jsonb, text, text, text, text, uuid) to service_role;
 grant execute on function place_share(uuid, uuid, text, int, int) to service_role;
 grant execute on function delete_share_compact(uuid, uuid) to service_role;
 grant execute on function reorder_shares(uuid, uuid[]) to service_role;
@@ -561,3 +630,4 @@ alter table engagement_events enable row level security;
 alter table sessions enable row level security;
 alter table group_messages enable row level security;
 alter table push_subscriptions enable row level security;
+alter table users enable row level security;

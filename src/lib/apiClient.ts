@@ -1,4 +1,5 @@
 export const MEMBER_TOKEN_HEADER = "x-member-token";
+export const USER_TOKEN_HEADER = "x-user-token";
 
 export class ApiError extends Error {
   status: number;
@@ -15,6 +16,7 @@ interface RequestOptions {
   method?: string;
   body?: unknown;
   token?: string | null;
+  userToken?: string | null;
 }
 
 // Cache mémoire par URL des réponses GET avec ETag : évite de retransmettre/reparser
@@ -25,6 +27,7 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   const method = options.method ?? "GET";
   const headers: Record<string, string> = { "Content-Type": "application/json" };
   if (options.token) headers[MEMBER_TOKEN_HEADER] = options.token;
+  if (options.userToken) headers[USER_TOKEN_HEADER] = options.userToken;
 
   const cached = method === "GET" ? etagCache.get(path) : undefined;
   if (cached) headers["If-None-Match"] = cached.etag;
