@@ -279,17 +279,33 @@ export function ShareDetailModal({
           )}
 
           {((item.rating?.votesCount ?? 0) > 0 || !isMe) && (
-            <div className="flex items-center justify-between gap-3 bg-surface-2 rounded-2xl p-4">
-              {(item.rating?.votesCount ?? 0) > 0 ? (
-                <p className="text-sm text-accent">
-                  🏆 {item.rating!.scoreOn100}/100 · {item.rating!.votesCount} vote
-                  {item.rating!.votesCount > 1 ? "s" : ""}
-                </p>
-              ) : (
-                <p className="text-sm text-muted">Pas encore noté</p>
-              )}
-              {!isMe && (
-                <RatingWidget itemId={item.id} token={token} myScore={item.rating?.myScore ?? null} onRated={onChanged} />
+            <div className="flex flex-col gap-3 bg-surface-2 rounded-2xl p-4">
+              <div className="flex items-center justify-between gap-3">
+                {(item.rating?.votesCount ?? 0) > 0 ? (
+                  <p className="text-sm text-accent">
+                    🏆 {item.rating!.scoreOn100}/100 · {item.rating!.votesCount} vote
+                    {item.rating!.votesCount > 1 ? "s" : ""}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted">Pas encore noté</p>
+                )}
+                {!isMe && (
+                  <RatingWidget itemId={item.id} token={token} myScore={item.rating?.myScore ?? null} onRated={onChanged} />
+                )}
+              </div>
+
+              {item.rating && item.rating.votes.length > 0 && (
+                <div className="flex flex-col gap-1.5 pt-2 border-t border-border/60">
+                  {item.rating.votes.map((v) => (
+                    <div key={v.id} className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Avatar emoji={v.avatarEmoji} color={v.avatarColor} size="xs" />
+                        <span className="text-xs text-muted truncate">{v.pseudo}</span>
+                      </div>
+                      <span className="text-xs font-medium shrink-0">{v.score}/10</span>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           )}

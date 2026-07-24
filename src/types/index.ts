@@ -43,11 +43,21 @@ export interface Member {
   created_at: string;
 }
 
+export interface RatingVote {
+  id: string;
+  pseudo: string;
+  avatarEmoji: string;
+  avatarColor: string;
+  score: number;
+}
+
 export interface RatingInfo {
   average: number;
   scoreOn100: number;
   votesCount: number;
   myScore: number | null;
+  /** Détail de qui a voté quoi, trié du score le plus élevé au plus bas. */
+  votes: RatingVote[];
 }
 
 export interface CommentAuthor {

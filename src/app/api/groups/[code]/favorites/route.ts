@@ -56,6 +56,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ code
             scoreOn100: aggregate?.scoreOn100 ?? 0,
             votesCount: aggregate?.votesCount ?? 0,
             myScore: null,
+            votes: [],
           },
           isFavorite: true,
         },

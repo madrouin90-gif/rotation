@@ -235,6 +235,18 @@ export async function buildGroupState(group: Group, viewerMemberId: string): Pro
                 scoreOn100: aggregate?.scoreOn100 ?? 0,
                 votesCount: aggregate?.votesCount ?? 0,
                 myScore: myRating ? myRating.score : null,
+                votes: itemRatings
+                  .map((r) => {
+                    const rater = memberById.get(r.rater_member_id);
+                    return {
+                      id: r.rater_member_id,
+                      pseudo: rater?.pseudo ?? "Quelqu'un",
+                      avatarEmoji: rater?.avatar_emoji ?? "🎵",
+                      avatarColor: rater?.avatar_color ?? "#888888",
+                      score: r.score,
+                    };
+                  })
+                  .sort((a, b) => b.score - a.score),
               },
               comments: commentsByItem.get(s.item_id) ?? [],
               isFavorite: favoriteItemIds.has(s.item_id),

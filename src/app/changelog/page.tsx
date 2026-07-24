@@ -8,6 +8,15 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.4.4",
+    title: "Détail des votes directement sur la chanson",
+    items: [
+      "La fiche détaillée d'une chanson affiche maintenant qui a voté quoi, pas seulement la moyenne — plus besoin d'aller au Palmarès pour voir le détail.",
+      "Le bouton pour modifier ta propre note est plus visible (existait déjà, mais était facile à manquer).",
+      "Corrige le bouton « Valider » de la note qui débordait de la carte et devenait invisible sur mobile.",
+    ],
+  },
+  {
     version: "2.4.3",
     title: "Activation des notifications proposée à l'installation",
     items: [

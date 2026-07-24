@@ -42,22 +42,29 @@ export function RatingWidget({ itemId, token, myScore, onRated }: RatingWidgetPr
           setValue(myScore ?? 5);
           setEditing(true);
         }}
-        className="text-xs text-muted hover:text-accent transition cursor-pointer text-left"
+        title={myScore !== null ? "Modifier ta note" : "Noter ce partage"}
+        className={`text-xs transition cursor-pointer text-left px-2.5 py-1 rounded-full border ${
+          myScore !== null
+            ? "border-accent/40 bg-accent/10 text-accent hover:bg-accent/20"
+            : "border-border bg-surface-2 text-muted hover:text-accent hover:border-accent/40"
+        }`}
       >
-        {myScore !== null ? `Ta note : ${myScore}/10` : "+ Noter"}
+        {myScore !== null ? `✏️ Ta note : ${myScore}/10` : "+ Noter"}
       </button>
     );
   }
 
   return (
-    <div className="flex items-center gap-2" data-no-pan="true" onClick={(e) => e.stopPropagation()}>
-      <Stepper value={value} min={0} max={10} onChange={setValue} disabled={saving} />
-      <Button size="sm" onClick={handleSave} disabled={saving}>
-        {saving ? "..." : "Valider"}
-      </Button>
-      <Button variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={saving}>
-        Annuler
-      </Button>
+    <div className="flex flex-col gap-2 min-w-0" data-no-pan="true" onClick={(e) => e.stopPropagation()}>
+      <Stepper value={value} min={0} max={10} onChange={setValue} disabled={saving} size="sm" />
+      <div className="flex gap-2">
+        <Button size="sm" onClick={handleSave} disabled={saving} className="flex-1">
+          {saving ? "..." : "Valider"}
+        </Button>
+        <Button variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={saving}>
+          Annuler
+        </Button>
+      </div>
     </div>
   );
 }
