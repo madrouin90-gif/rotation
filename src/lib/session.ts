@@ -60,6 +60,12 @@ export function getSession(groupCode: string): MemberSession | null {
   return readSessions()[groupCode.toUpperCase()] ?? null;
 }
 
+/** Tous les groupes où ce membre a une session active sur cet appareil — ex. pour choisir
+ * dans quel groupe partager après un partage natif (Web Share Target) reçu hors contexte. */
+export function getAllSessions(): MemberSession[] {
+  return Object.values(readSessions());
+}
+
 export function saveSession(session: MemberSession) {
   const sessions = readSessions();
   sessions[session.groupCode.toUpperCase()] = session;

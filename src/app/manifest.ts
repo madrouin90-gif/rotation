@@ -16,5 +16,17 @@ export default function manifest(): MetadataRoute.Manifest {
         type: "image/svg+xml",
       },
     ],
-  };
+    // Permet de choisir Rotation dans le menu "Partager" natif (ex. depuis l'app Spotify,
+    // Android uniquement — iOS/Safari ne supporte pas cette API). Non typé dans
+    // MetadataRoute.Manifest, d'où le cast.
+    share_target: {
+      action: "/partager-cible",
+      method: "GET",
+      params: {
+        title: "title",
+        text: "text",
+        url: "url",
+      },
+    },
+  } as MetadataRoute.Manifest;
 }

@@ -8,6 +8,14 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.4",
+    title: "Partage simplifié depuis Spotify",
+    items: [
+      "Bouton « 📋 Coller » dans le formulaire de partage : colle et prévisualise ton lien Spotify en un tap.",
+      "Sur Android, « Partager » une chanson depuis l'app Spotify propose maintenant Rotation directement dans la liste — ouvre le formulaire déjà pré-rempli (non disponible sur iOS, limitation d'Apple).",
+    ],
+  },
+  {
     version: "2.3.2",
     title: "Logo dans le mur du groupe",
     items: ["Le logo Rotation apparaît maintenant à côté du nom du groupe, en plus de la page d'accueil."],

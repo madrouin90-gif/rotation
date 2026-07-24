@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -14,15 +14,26 @@ interface AddShareFlowProps {
   settings: GroupSettings;
   myShares: ShareWithReactions[];
   forcedReplaceRank?: number;
+  /** Pré-remplit et lance la prévisualisation immédiatement — ex. lien reçu via le partage
+   * natif (Web Share Target) depuis Spotify. */
+  initialUrl?: string;
   onClose: () => void;
   onChanged: () => void;
 }
 
 type Step = "link" | "details" | "replace";
 
-export function AddShareFlow({ token, settings, myShares, forcedReplaceRank, onClose, onChanged }: AddShareFlowProps) {
+export function AddShareFlow({
+  token,
+  settings,
+  myShares,
+  forcedReplaceRank,
+  initialUrl,
+  onClose,
+  onChanged,
+}: AddShareFlowProps) {
   const [step, setStep] = useState<Step>("link");
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState(initialUrl ?? "");
   const [note, setNote] = useState("");
   const [genres, setGenres] = useState<string[]>([]);
   const [preview, setPreview] = useState<SpotifyPreview | null>(null);
@@ -33,17 +44,42 @@ export function AddShareFlow({ token, settings, myShares, forcedReplaceRank, onC
   const notesEnabled = settings.note_max_length > 0;
   const slotsFull = myShares.length >= settings.slots_per_member;
 
-  async function handlePreview() {
+  useEffect(() => {
+    if (initialUrl) handlePreview(initialUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handlePreview(overrideUrl?: string) {
+    const target = overrideUrl ?? url;
     setError(null);
     setLoadingPreview(true);
     try {
-      const result = await apiFetch<SpotifyPreview>("/api/items/preview", { method: "POST", token, body: { url } });
+      const result = await apiFetch<SpotifyPreview>("/api/items/preview", {
+        method: "POST",
+        token,
+        body: { url: target },
+      });
       setPreview(result);
       setStep("details");
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Impossible de charger ce lien.");
     } finally {
       setLoadingPreview(false);
+    }
+  }
+
+  async function handlePaste() {
+    setError(null);
+    try {
+      const text = (await navigator.clipboard.readText()).trim();
+      if (!text) {
+        setError("Le presse-papier est vide.");
+        return;
+      }
+      setUrl(text);
+      handlePreview(text);
+    } catch {
+      setError("Impossible d'accéder au presse-papier — colle le lien manuellement (Ctrl/Cmd+V).");
     }
   }
 
@@ -87,15 +123,28 @@ export function AddShareFlow({ token, settings, myShares, forcedReplaceRank, onC
         {step === "link" && (
           <div className="flex flex-col gap-4">
             <p className="text-sm text-muted">Colle un lien Spotify (chanson, album ou artiste).</p>
-            <Input
-              autoFocus
-              placeholder="https://open.spotify.com/track/..."
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && url.trim() && handlePreview()}
-            />
+            <div className="flex gap-2">
+              <div className="flex-1 min-w-0">
+                <Input
+                  autoFocus
+                  placeholder="https://open.spotify.com/track/..."
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && url.trim() && handlePreview()}
+                />
+              </div>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handlePaste}
+                disabled={loadingPreview}
+                title="Coller depuis le presse-papier"
+              >
+                📋
+              </Button>
+            </div>
             {error && <p className="text-sm text-red-400">{error}</p>}
-            <Button disabled={!url.trim() || loadingPreview} onClick={handlePreview}>
+            <Button disabled={!url.trim() || loadingPreview} onClick={() => handlePreview()}>
               {loadingPreview ? "Chargement..." : "Prévisualiser"}
             </Button>
           </div>

@@ -36,6 +36,7 @@ export default function GroupPage() {
 
   const [sortModeOverride, setSortModeOverride] = useState<SortMode | null>(null);
   const [showAddShare, setShowAddShare] = useState(false);
+  const [pendingShareUrl, setPendingShareUrl] = useState<string | undefined>(undefined);
   const [selectedShareId, setSelectedShareId] = useState<string | null>(null);
   const [filterMemberIds, setFilterMemberIds] = useState<string[]>([]);
   const [filterGenres, setFilterGenres] = useState<string[]>([]);
@@ -69,6 +70,18 @@ export default function GroupPage() {
     if (!shareParam) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedShareId(shareParam);
+    router.replace(`/g/${code}`, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    // Lien reçu via le partage natif (Web Share Target, ?shareUrl=...) ou le bouton
+    // "Coller" : ouvre directement le formulaire de partage pré-rempli.
+    const shareUrlParam = searchParams.get("shareUrl");
+    if (!shareUrlParam) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPendingShareUrl(shareUrlParam);
+    setShowAddShare(true);
     router.replace(`/g/${code}`, { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -312,7 +325,11 @@ export default function GroupPage() {
           token={session.token}
           settings={data.group.settings}
           myShares={me.shares}
-          onClose={() => setShowAddShare(false)}
+          initialUrl={pendingShareUrl}
+          onClose={() => {
+            setShowAddShare(false);
+            setPendingShareUrl(undefined);
+          }}
           onChanged={refresh}
         />
       )}
