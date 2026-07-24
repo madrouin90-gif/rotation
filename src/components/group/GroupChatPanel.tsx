@@ -67,6 +67,22 @@ export function GroupChatPanel({ groupCode, token, myMemberId, isAdmin }: GroupC
     <div className="flex flex-col gap-3 h-full">
       <h2 className="font-display text-lg px-1">💬 Chat du groupe</h2>
 
+      <div className="flex flex-col gap-2 shrink-0">
+        <textarea
+          value={body}
+          maxLength={500}
+          onChange={(e) => setBody(e.target.value)}
+          rows={2}
+          placeholder="Écris un message au groupe..."
+          className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent transition resize-none"
+        />
+        <div className="flex justify-end">
+          <Button size="sm" onClick={handlePost} disabled={posting || !body.trim()}>
+            {posting ? "..." : "Publier"}
+          </Button>
+        </div>
+      </div>
+
       {error && <p className="text-xs text-red-400 px-1">{error}</p>}
 
       {!error && entries && entries.length === 0 && (
@@ -106,22 +122,6 @@ export function GroupChatPanel({ groupCode, token, myMemberId, isAdmin }: GroupC
           ))}
         </ul>
       )}
-
-      <div className="flex flex-col gap-2 shrink-0">
-        <textarea
-          value={body}
-          maxLength={500}
-          onChange={(e) => setBody(e.target.value)}
-          rows={2}
-          placeholder="Écris un message au groupe..."
-          className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent transition resize-none"
-        />
-        <div className="flex justify-end">
-          <Button size="sm" onClick={handlePost} disabled={posting || !body.trim()}>
-            {posting ? "..." : "Publier"}
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

@@ -282,6 +282,22 @@ export function ShareDetailModal({
               💬 Commentaires{comments.length > 0 ? ` (${comments.length})` : ""}
             </h3>
 
+            <div className="flex flex-col gap-2">
+              <textarea
+                value={commentBody}
+                maxLength={500}
+                onChange={(e) => setCommentBody(e.target.value)}
+                rows={2}
+                placeholder="Écris un commentaire..."
+                className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent transition resize-none"
+              />
+              <div className="flex justify-end">
+                <Button size="sm" onClick={handlePostComment} disabled={postingComment || !commentBody.trim()}>
+                  {postingComment ? "..." : "Publier"}
+                </Button>
+              </div>
+            </div>
+
             {comments.length > 0 && (
               <ul className="flex flex-col gap-3">
                 {comments.map((comment) => (
@@ -307,22 +323,6 @@ export function ShareDetailModal({
                 ))}
               </ul>
             )}
-
-            <div className="flex flex-col gap-2">
-              <textarea
-                value={commentBody}
-                maxLength={500}
-                onChange={(e) => setCommentBody(e.target.value)}
-                rows={2}
-                placeholder="Écris un commentaire..."
-                className="w-full bg-surface border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent transition resize-none"
-              />
-              <div className="flex justify-end">
-                <Button size="sm" onClick={handlePostComment} disabled={postingComment || !commentBody.trim()}>
-                  {postingComment ? "..." : "Publier"}
-                </Button>
-              </div>
-            </div>
           </div>
         </div>
       </div>
