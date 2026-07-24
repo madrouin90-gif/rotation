@@ -94,7 +94,11 @@ export function ShareCard({
         />
       </div>
 
-      <div className="p-3 flex flex-col gap-1.5 min-h-[92px]">
+      {/* Hauteur fixe (plutôt que min-h) : chaque carte occupe exactement le même espace peu
+          importe son contenu, ce qui aligne les rangs entre colonnes sans dépendre de CSS
+          Grid/subgrid — les cartes avec moins de contenu ont juste un peu d'espace vide en
+          bas. overflow-hidden en filet de sécurité si un cas extrême dépasse cette hauteur. */}
+      <div className="p-3 flex flex-col gap-1.5 h-[176px] overflow-hidden">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-medium truncate">{item.title}</p>
           <span className="text-[10px] text-muted shrink-0">#{share.rank}</span>
