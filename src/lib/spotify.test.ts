@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseSpotifyUrl, splitTitleArtist } from "@/lib/spotify";
+import { parseSpotifyUrl, extractArtistFromOgDescription } from "@/lib/spotify";
 
 describe("parseSpotifyUrl", () => {
   it("parse un lien track standard", () => {
@@ -38,32 +38,22 @@ describe("parseSpotifyUrl", () => {
   });
 });
 
-describe("splitTitleArtist", () => {
-  it("sépare 'Titre - Artiste' pour une piste", () => {
-    expect(splitTitleArtist("Shape of You - Ed Sheeran", "track")).toEqual({
-      title: "Shape of You",
-      artistName: "Ed Sheeran",
-    });
+describe("extractArtistFromOgDescription", () => {
+  it("extrait l'artiste (premier segment) pour une piste", () => {
+    expect(extractArtistFromOgDescription("Rick Astley · Whenever You Need Somebody · Song · 1987", "track")).toBe(
+      "Rick Astley"
+    );
   });
 
-  it("garde le titre entier pour un artiste (pas de séparation)", () => {
-    expect(splitTitleArtist("Ed Sheeran - Topic", "artist")).toEqual({
-      title: "Ed Sheeran - Topic",
-      artistName: null,
-    });
+  it("extrait l'artiste (premier segment) pour un album", () => {
+    expect(extractArtistFromOgDescription("Miles Davis · album · 1959 · 5 songs", "album")).toBe("Miles Davis");
   });
 
-  it("laisse artistName à null quand il n'y a pas de séparateur", () => {
-    expect(splitTitleArtist("Titre sans artiste", "album")).toEqual({
-      title: "Titre sans artiste",
-      artistName: null,
-    });
+  it("retourne toujours null pour un artiste (le titre oEmbed est déjà son nom)", () => {
+    expect(extractArtistFromOgDescription("Artist · 101M monthly listeners.", "artist")).toBeNull();
   });
 
-  it("gère plusieurs séparateurs ' - ' en gardant tout après le premier comme artiste", () => {
-    expect(splitTitleArtist("A - B - C", "track")).toEqual({
-      title: "A",
-      artistName: "B - C",
-    });
+  it("retourne null si la description est absente", () => {
+    expect(extractArtistFromOgDescription(null, "track")).toBeNull();
   });
 });

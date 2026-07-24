@@ -31,22 +31,49 @@ export interface SpotifyOEmbed {
   artworkUrl: string | null;
 }
 
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&amp;/g, "&")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
 /**
- * Titre oEmbed pour un artiste/album : souvent "Titre" seul (pas d'auteur distinct pour un artiste),
- * pour un titre de piste/album Spotify formate parfois "Titre - Artiste" via le champ title.
+ * Extrait le nom d'artiste depuis la balise `og:description` de la page Spotify — pour une
+ * piste/album, son format est "Artiste · Album/album · ... " (le premier segment est
+ * toujours l'artiste). Pour un artiste, cette balise ne contient pas de nom ("Artist · N
+ * auditeurs") : le titre oEmbed est déjà le nom de l'artiste, donc toujours null ici.
  */
-export function splitTitleArtist(
-  rawTitle: string,
+export function extractArtistFromOgDescription(
+  ogDescription: string | null,
   type: SpotifyItemType
-): { title: string; artistName: string | null } {
-  if (type === "artist") {
-    return { title: rawTitle, artistName: null };
+): string | null {
+  if (!ogDescription || type === "artist") return null;
+  const first = ogDescription.split(" · ")[0]?.trim();
+  return first || null;
+}
+
+/**
+ * L'oEmbed public de Spotify ne fournit aucun champ artiste distinct (title est le titre
+ * brut, ex. "Never Gonna Give You Up" — jamais "Titre - Artiste") : on va chercher le nom
+ * sur la page Spotify elle-même, toujours sans clé API. Best-effort — ne fait jamais
+ * échouer l'ajout du partage si Spotify change son HTML ou bloque la requête.
+ */
+async function fetchOgDescription(canonicalUrl: string): Promise<string | null> {
+  try {
+    const response = await fetch(canonicalUrl, {
+      signal: AbortSignal.timeout(8000),
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; RotationBot/1.0)" },
+    });
+    if (!response.ok) return null;
+    const html = await response.text();
+    const match = html.match(/<meta property="og:description" content="([^"]*)"/);
+    return match ? decodeHtmlEntities(match[1]) : null;
+  } catch {
+    return null;
   }
-  const parts = rawTitle.split(" - ");
-  if (parts.length >= 2) {
-    return { title: parts[0], artistName: parts.slice(1).join(" - ") };
-  }
-  return { title: rawTitle, artistName: null };
 }
 
 export async function fetchSpotifyOEmbed(canonicalUrl: string, type: SpotifyItemType): Promise<SpotifyOEmbed> {
@@ -75,10 +102,11 @@ export async function fetchSpotifyOEmbed(canonicalUrl: string, type: SpotifyItem
     throw new AppError("Impossible de lire les informations de ce lien Spotify.");
   }
 
-  const { title, artistName } = splitTitleArtist(data.title, type);
+  const ogDescription = await fetchOgDescription(canonicalUrl);
+  const artistName = extractArtistFromOgDescription(ogDescription, type);
 
   return {
-    title,
+    title: data.title,
     artistName,
     artworkUrl: data.thumbnail_url ?? null,
   };

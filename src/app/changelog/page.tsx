@@ -8,6 +8,13 @@ interface ChangelogEntry {
 
 const ENTRIES: ChangelogEntry[] = [
   {
+    version: "2.4.2",
+    title: "Le nom de l'artiste s'affiche enfin",
+    items: [
+      "Corrige la récupération du nom de l'artiste pour une chanson ou un album (il n'était jamais capturé). Pour un partage d'artiste, seul son nom est affiché, sans doublon.",
+    ],
+  },
+  {
     version: "2.4.1",
     title: "Thèmes simplifiés",
     items: ["Ne garde que les thèmes Sombre et Clair — Minuit, Coucher de soleil et Contraste sont retirés."],
