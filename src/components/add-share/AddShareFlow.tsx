@@ -60,6 +60,7 @@ export function AddShareFlow({
         body: { url: target },
       });
       setPreview(result);
+      setGenres(result.suggestedGenres);
       setStep("details");
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Impossible de charger ce lien.");
@@ -168,7 +169,9 @@ export function AddShareFlow({
 
             {settings.genre_tags.length > 0 && (
               <div>
-                <p className="text-xs text-muted mb-2">Genres (optionnel)</p>
+                <p className="text-xs text-muted mb-2">
+                  Genres (optionnel){preview.suggestedGenres.length > 0 ? " — suggérés automatiquement, ajuste au besoin" : ""}
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {settings.genre_tags.map((genre) => {
                     const selected = genres.includes(genre);

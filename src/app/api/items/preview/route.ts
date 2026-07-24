@@ -3,6 +3,7 @@ import { requireMember } from "@/lib/auth";
 import { getGroupById, spotifyTypeLabelFr } from "@/lib/groupState";
 import { AppError, errorResponse } from "@/lib/errors";
 import { parseSpotifyUrl, fetchSpotifyOEmbed } from "@/lib/spotify";
+import { suggestGenres } from "@/lib/spotifyApi";
 import { enforceRateLimit } from "@/lib/rateLimit";
 
 interface PreviewBody {
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
     }
 
     const oembed = await fetchSpotifyOEmbed(parsed.canonicalUrl, parsed.type);
+    const suggestedGenres = await suggestGenres(parsed.type, parsed.spotifyId, group.settings.genre_tags);
 
     return NextResponse.json({
       type: parsed.type,
@@ -41,6 +43,7 @@ export async function POST(request: Request) {
       title: oembed.title,
       artistName: oembed.artistName,
       artworkUrl: oembed.artworkUrl,
+      suggestedGenres,
     });
   } catch (error) {
     return errorResponse(error);

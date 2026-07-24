@@ -202,6 +202,9 @@ export interface SpotifyPreview {
   title: string;
   artistName: string | null;
   artworkUrl: string | null;
+  /** Genres suggérés automatiquement (API Spotify), à confirmer/ajuster — vide si l'API
+   * Spotify n'est pas configurée ou n'a rien trouvé. */
+  suggestedGenres: string[];
 }
 
 export interface PalmaresVote {
